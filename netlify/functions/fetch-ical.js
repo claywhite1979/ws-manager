@@ -2,7 +2,11 @@ export default async function handler(event) {
   const url = event.queryStringParameters?.url
 
   if (!url) {
-    return new Response(JSON.stringify({ error: 'Missing url parameter' }), {
+    return new Response(JSON.stringify({ 
+      error: 'Missing url parameter',
+      received: JSON.stringify(event.queryStringParameters),
+      fullEvent: JSON.stringify(Object.keys(event))
+    }), {
       status: 400,
       headers: { 'Content-Type': 'application/json' }
     })
