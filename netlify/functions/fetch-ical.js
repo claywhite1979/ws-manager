@@ -1,7 +1,4 @@
-const https = require('https')
-const http = require('http')
-
-exports.handler = async function(event) {
+export default async function handler(event) {
   const url = event.queryStringParameters?.url
 
   if (!url) {
@@ -12,7 +9,10 @@ exports.handler = async function(event) {
   }
 
   try {
-    const data = await fetchUrl(url)
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const data = await response.text()
+
     return {
       statusCode: 200,
       headers: {
@@ -27,16 +27,4 @@ exports.handler = async function(event) {
       body: JSON.stringify({ error: err.message })
     }
   }
-}
-
-function fetchUrl(url) {
-  return new Promise((resolve, reject) => {
-    const client = url.startsWith('https') ? https : http
-    client.get(url, (res) => {
-      let data = ''
-      res.on('data', chunk => data += chunk)
-      res.on('end', () => resolve(data))
-      res.on('error', reject)
-    }).on('error', reject)
-  })
 }
