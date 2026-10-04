@@ -91,7 +91,7 @@ export default function CleaningJobs() {
     const cleanerName = job.cleaner?.name || 'there'
     const jobToken = job.job_token
 
-    const appUrl = `http://localhost:5173/job/${jobToken}`
+    const appUrl = `https://whitetailspur.com/job/${jobToken}`
 
     const message =
       `Hi ${cleanerName}! We'd like to offer you a cleaning job at the property.
