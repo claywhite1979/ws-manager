@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import Modal from './Modal'
+import SupplyForm from './SupplyForm'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
@@ -7,6 +9,7 @@ export default function Supplies() {
     const [supplies, setSupplies] = useState([])
     const [flags, setFlags] = useState([])
     const [loading, setLoading] = useState(true)
+    const [showSupplyForm, setShowSupplyForm] = useState(false)
 
     useEffect(() => {
         fetchAll()
@@ -31,17 +34,11 @@ export default function Supplies() {
         setLoading(false)
     }
 
-    async function addSupply() {
-        const name = prompt('Supply name (e.g. Paper towels):')
-        if (!name) return
-        const category = prompt('Category (e.g. Kitchen / Bathroom / Bedroom):')
-        const par_level_note = prompt('Par level note (e.g. Should see 2+ backup rolls):')
-        const order_url = prompt('Order URL (paste Amazon link or leave blank):')
-
+    async function addSupply(data) {
         await supabase
             .from('supply_item')
-            .insert([{ property_id: PROPERTY_ID, name, category, par_level_note, order_url }])
-
+            .insert([{ property_id: PROPERTY_ID, ...data }])
+        setShowSupplyForm(false)
         fetchAll()
     }
 
@@ -82,7 +79,7 @@ export default function Supplies() {
     return (
         <section style={{ marginTop: '2rem' }}>
             <h2>Supplies</h2>
-            <button onClick={addSupply}>+ Add Supply Item</button>
+            <button onClick={() => setShowSupplyForm(true)}>+ Add Supply Item</button>
             <button onClick={fetchAll} style={{ marginLeft: '1rem' }}>↻ Refresh</button>
 
             {flags.length > 0 && (
@@ -151,6 +148,14 @@ export default function Supplies() {
                     </div>
                 ))
             }
+            {showSupplyForm && (
+                <Modal title="Add Supply Item" onClose={() => setShowSupplyForm(false)}>
+                    <SupplyForm
+                        onSave={addSupply}
+                        onCancel={() => setShowSupplyForm(false)}
+                    />
+                </Modal>
+            )}
         </section>
     )
 }

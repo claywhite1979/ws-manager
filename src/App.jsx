@@ -7,11 +7,14 @@ import { Routes, Route } from 'react-router-dom'
 import JobPage from './JobPage'
 import Supplies from './Supplies'
 import ICalSync from './ICalSync'
+import Modal from './Modal'
+import CleanerForm from './CleanerForm'
 
 function Dashboard() {
   const { user } = useUser()
   const ALLOWED_EMAILS = ['claywhite1979@gmail.com', 'hpkcllc@gmail.com']
   const [stayRefresh, setStayRefresh] = useState(0)
+  const [showCleanerForm, setShowCleanerForm] = useState(false)
 
   function triggerStayRefresh() {
     setStayRefresh(prev => prev + 1)
@@ -65,16 +68,11 @@ function Dashboard() {
     fetchData()
   }
 
-  async function addCleaner() {
-    const name = prompt('Cleaner name?')
-    const phone = prompt('Phone number?')
-    const default_rate = prompt('Default rate (e.g. 150)?')
-    if (!name) return
-
+  async function addCleaner(data) {
     await supabase
       .from('cleaner')
-      .insert([{ name, phone, default_rate }])
-
+      .insert([data])
+    setShowCleanerForm(false)
     fetchData()
   }
 
@@ -117,7 +115,7 @@ function Dashboard() {
 
       <section style={{ marginTop: '2rem' }}>
         <h2>Cleaners</h2>
-        <button onClick={addCleaner}>+ Add Cleaner</button>
+        <button onClick={() => setShowCleanerForm(true)}>+ Add Cleaner</button>
         {cleaners.length === 0
           ? <p>No cleaners yet.</p>
           : cleaners.map(c => (
@@ -140,6 +138,14 @@ function Dashboard() {
       <CleaningJobs />
       <Supplies />
       <ICalSync onSync={triggerStayRefresh} />
+      {showCleanerForm && (
+        <Modal title="Add Cleaner" onClose={() => setShowCleanerForm(false)}>
+          <CleanerForm
+            onSave={addCleaner}
+            onCancel={() => setShowCleanerForm(false)}
+          />
+        </Modal>
+      )}
     </div>
   )
 }

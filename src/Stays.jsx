@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
+import Modal from './Modal'
+import StayForm from './StayForm'
+import JobOfferForm from './JobOfferForm'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
@@ -8,6 +11,8 @@ export default function Stays(props) {
   const [cleaners, setCleaners] = useState([])
   const [loading, setLoading] = useState(true)
   const [composedText, setComposedText] = useState(null)
+  const [showStayForm, setShowStayForm] = useState(false)
+  const [offerStay, setOfferStay] = useState(null)
 
   useEffect(() => {
     fetchAll()
@@ -32,17 +37,11 @@ export default function Stays(props) {
     setLoading(false)
   }
 
-  async function addStay() {
-    const guest_name = prompt('Guest name (optional):')
-    const check_in = prompt('Check-in date (YYYY-MM-DD):')
-    const check_out = prompt('Check-out date (YYYY-MM-DD):')
-    const source = prompt('Source (airbnb / vrbo / direct / manual):')
-    if (!check_in || !check_out) return
-
+  async function addStay(data) {
     await supabase
       .from('stay')
-      .insert([{ property_id: PROPERTY_ID, guest_name, check_in, check_out, source }])
-
+      .insert([{ property_id: PROPERTY_ID, ...data }])
+    setShowStayForm(false)
     fetchAll()
   }
 
@@ -97,29 +96,17 @@ export default function Stays(props) {
       .map(j => j.cleaner.name)
   }
 
-  async function createOffer(stay) {
+  async function createOffer({ cleaner_id, agreed_rate }) {
+    const stay = offerStay
     const window = calculateWindow(stay, stays)
-    const declinedNames = getDeclinedCleaners(stay)
-    const availableCleaners = cleaners.filter(c => !declinedNames.includes(c.name))
-
-    if (availableCleaners.length === 0) {
-      alert('All active cleaners have declined this job. Add more cleaners or re-activate one.')
-      return
-    }
-
-    const cleanerOptions = availableCleaners.map((c, i) => `${i + 1}. ${c.name}`).join('\n')
-    const cleanerIndex = prompt(`Assign a cleaner:\n${cleanerOptions}\nEnter number:`)
-    const cleaner = availableCleaners[parseInt(cleanerIndex) - 1]
-    if (!cleaner) return
-
-    const agreed_rate = prompt(`Agreed rate (default: $${cleaner.default_rate}):`) || cleaner.default_rate
+    const cleaner = cleaners.find(c => c.id === cleaner_id)
 
     const { data, error } = await supabase
       .from('cleaning_job')
       .insert([{
         property_id: PROPERTY_ID,
         stay_id: stay.id,
-        cleaner_id: cleaner.id,
+        cleaner_id,
         scheduled_date: window.start,
         agreed_rate,
         status: 'offered',
@@ -134,6 +121,7 @@ export default function Stays(props) {
       composeText(data, window)
     }
 
+    setOfferStay(null)
     fetchAll()
   }
 
@@ -180,7 +168,7 @@ Reply if you have any questions. Thanks!`
             </p>
           )}
           <button
-            onClick={() => createOffer(stay)}
+            onClick={() => setOfferStay(stay)}
             style={{ marginTop: '0.5rem', cursor: 'pointer' }}
           >
             + Create Offer
@@ -266,7 +254,7 @@ Reply if you have any questions. Thanks!`
   return (
     <section style={{ marginTop: '2rem' }}>
       <h2>Stays</h2>
-      <button onClick={addStay}>+ Add Stay</button>
+      <button onClick={() => setShowStayForm(true)}>+ Add Stay</button>
       <button onClick={fetchAll} style={{ marginLeft: '1rem' }}>↻ Refresh</button>
 
       {composedText && (
@@ -310,6 +298,25 @@ Reply if you have any questions. Thanks!`
           </div>
         ))
       }
+      {showStayForm && (
+        <Modal title="Add Stay" onClose={() => setShowStayForm(false)}>
+          <StayForm
+            onSave={addStay}
+            onCancel={() => setShowStayForm(false)}
+          />
+        </Modal>
+      )}
+      {offerStay && (
+        <Modal title="Create Job Offer" onClose={() => setOfferStay(null)}>
+          <JobOfferForm
+            stay={offerStay}
+            window={calculateWindow(offerStay, stays)}
+            cleaners={cleaners.filter(c => !getDeclinedCleaners(offerStay).includes(c.name))}
+            onSave={createOffer}
+            onCancel={() => setOfferStay(null)}
+          />
+        </Modal>
+      )}
     </section>
   )
 }
