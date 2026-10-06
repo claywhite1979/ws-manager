@@ -12,7 +12,7 @@ import CleanerForm from './CleanerForm'
 
 function Dashboard() {
   const { user } = useUser()
-  const ALLOWED_EMAILS = ['claywhite1979@gmail.com', 'hpkcllc@gmail.com']
+  const ALLOWED_EMAILS = ['claywhite1979@gmail.com', 'hpkcllc@gmail.com', "imkkristenwhite@gmail.com"]
   const [stayRefresh, setStayRefresh] = useState(0)
   const [showCleanerForm, setShowCleanerForm] = useState(false)
 
@@ -92,7 +92,7 @@ function Dashboard() {
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>WS Manager</h1>
+        <h1>Whitetail Spur Management Portal</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span>👋 {user?.firstName || user?.emailAddresses[0]?.emailAddress}</span>
           <UserButton />
