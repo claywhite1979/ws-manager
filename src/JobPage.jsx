@@ -190,6 +190,45 @@ export default function JobPage() {
 
   const availableDates = getAvailableDates(job)
 
+  function downloadCalendarEvent() {
+    const cleaningDate = job.scheduled_date?.replace(/-/g, '')
+    const nextDay = new Date(job.scheduled_date)
+    nextDay.setDate(nextDay.getDate() + 1)
+    const nextDayStr = nextDay.toISOString().split('T')[0].replace(/-/g, '')
+
+    const jobUrl = `https://whitetailspur.com/job/${job.job_token}`
+
+    const description = [
+      `Guest stay: ${job.stay?.check_in} to ${job.stay?.check_out}`,
+      `Cleaning date: ${job.scheduled_date}`,
+      `Job details & supply checklist: ${jobUrl}`,
+    ].join('\\n')
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Whitetail Spur//WS Manager//EN',
+      'BEGIN:VEVENT',
+      `DTSTART;VALUE=DATE:${cleaningDate}`,
+      `DTEND;VALUE=DATE:${nextDayStr}`,
+      `SUMMARY:Cleaning Job — Whitetail Spur`,
+      `DESCRIPTION:${description}`,
+      `URL:${jobUrl}`,
+      `END:VEVENT`,
+      'END:VCALENDAR',
+    ].join('\r\n')
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `cleaning-job-${job.scheduled_date}.ics`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div style={styles.page}>
       <h1 style={{ marginBottom: '0.25rem' }}>Cleaning Job</h1>
@@ -276,10 +315,27 @@ export default function JobPage() {
             <p style={{ margin: 0, color: '#155724' }}>
               ✅ Job confirmed for {job.scheduled_date}. Thank you!
             </p>
+            <button
+              onClick={downloadCalendarEvent}
+              style={{
+                marginTop: '0.75rem',
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                background: 'white',
+                color: '#155724',
+                border: '1px solid #155724',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: '600',
+              }}
+            >
+              📅 Add to Calendar
+            </button>
           </div>
 
           {supplies.length > 0 && (
             <div style={styles.card}>
+
               <h2 style={{ marginTop: 0 }}>🧴 Supply Check</h2>
               <p style={{ color: '#666', fontSize: '0.9rem' }}>
                 Please mark anything that is running low or out.
@@ -316,20 +372,20 @@ export default function JobPage() {
                               background:
                                 flags[s.id] === status
                                   ? status === 'ok' ? '#d4edda'
-                                  : status === 'low' ? '#fff3cd'
-                                  : '#f8d7da'
+                                    : status === 'low' ? '#fff3cd'
+                                      : '#f8d7da'
                                   : 'white',
                               borderColor:
                                 flags[s.id] === status
                                   ? status === 'ok' ? '#28a745'
-                                  : status === 'low' ? '#ffc107'
-                                  : '#dc3545'
+                                    : status === 'low' ? '#ffc107'
+                                      : '#dc3545'
                                   : '#ccc',
                               color:
                                 flags[s.id] === status
                                   ? status === 'ok' ? '#155724'
-                                  : status === 'low' ? '#856404'
-                                  : '#721c24'
+                                    : status === 'low' ? '#856404'
+                                      : '#721c24'
                                   : '#333',
                             }}
                           >
@@ -337,25 +393,42 @@ export default function JobPage() {
                           </button>
                         ))}
                       </div>
-                      {flags[s.id] && flags[s.id] !== 'ok' && (
-                        <input
-                          type="text"
-                          placeholder="Optional note..."
-                          value={notes[s.id] || ''}
-                          onChange={e => setNote(s.id, e.target.value)}
-                          style={{ marginTop: '0.5rem', width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }}
-                        />
-                      )}
+
+                      <input
+                        type="text"
+                        placeholder="Optional note..."
+                        value={notes[s.id] || ''}
+                        onChange={e => setNote(s.id, e.target.value)}
+                        style={{ marginTop: '0.5rem', width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }}
+                      />
+
                     </div>
                   ))}
 
-                  <button
-                    onClick={submitFlags}
-                    disabled={submitting || Object.keys(flags).length === 0}
-                    style={{ ...styles.acceptButton, marginTop: '0.5rem' }}
-                  >
-                    Submit Supply Report
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <button
+                      onClick={submitFlags}
+                      disabled={submitting || Object.keys(flags).length === 0}
+                      style={{ ...styles.acceptButton, flex: 1 }}
+                    >
+                      Submit Supply Report
+                    </button>
+                    <button
+                      onClick={() => setFlagsSubmitted(true)}
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        fontSize: '1rem',
+                        background: 'white',
+                        color: '#333',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                   {Object.keys(flags).length === 0 && (
                     <p style={{ fontSize: '0.85rem', color: '#666' }}>Mark at least one item above to submit.</p>
                   )}

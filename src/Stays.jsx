@@ -222,6 +222,15 @@ Reply if you have any questions. Thanks!`
           <p style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>
             {job.cleaner?.name} — {job.scheduled_date}
           </p>
+          <button
+            onClick={() => {
+              const window = calculateWindow(stay, stays)
+              composeText(job, window)
+            }}
+            style={{ marginTop: '0.25rem', cursor: 'pointer', fontSize: '0.85rem' }}
+          >
+            📱 Resend Text
+          </button>
         </div>
       )
     }
