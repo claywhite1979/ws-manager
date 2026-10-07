@@ -14,6 +14,8 @@ export default function JobPage() {
   const [flagsSubmitted, setFlagsSubmitted] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
   const [dateConfirmed, setDateConfirmed] = useState(false)
+  const [showResignForm, setShowResignForm] = useState(false)
+  const [resignNote, setResignNote] = useState('')
 
   useEffect(() => {
     fetchJob()
@@ -101,6 +103,21 @@ export default function JobPage() {
     await supabase
       .from('cleaning_job')
       .update({ status: 'declined' })
+      .eq('job_token', token)
+
+    setJob(prev => ({ ...prev, status: 'declined' }))
+    setSubmitting(false)
+  }
+
+  async function resign() {
+    setSubmitting(true)
+
+    await supabase
+      .from('cleaning_job')
+      .update({
+        status: 'declined',
+        payment_note: resignNote ? `Resigned: ${resignNote}` : 'Resigned by cleaner'
+      })
       .eq('job_token', token)
 
     setJob(prev => ({ ...prev, status: 'declined' }))
@@ -331,6 +348,83 @@ export default function JobPage() {
             >
               📅 Add to Calendar
             </button>
+
+            {!showResignForm ? (
+              <button
+                onClick={() => setShowResignForm(true)}
+                style={{
+                  marginTop: '0.5rem',
+                  display: 'block',
+                  background: 'none',
+                  border: 'none',
+                  color: '#888',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  padding: 0,
+                  textDecoration: 'underline',
+                }}
+              >
+                I can no longer do this job
+              </button>
+            ) : (
+              <div style={{ marginTop: '0.75rem', borderTop: '1px solid #b8dbb8', paddingTop: '0.75rem' }}>
+                <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#155724' }}>
+                  Please let us know why if you can:
+                </p>
+                <input
+                  type="text"
+                  placeholder="Optional reason..."
+                  value={resignNote}
+                  onChange={e => setResignNote(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    borderRadius: '4px',
+                    border: '1px solid #b8dbb8',
+                    boxSizing: 'border-box',
+                    fontSize: '0.9rem',
+                    marginBottom: '0.5rem',
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button
+                    onClick={resign}
+                    disabled={submitting}
+                    style={{
+                      flex: 1,
+                      padding: '0.6rem',
+                      background: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                    }}
+                  >
+                    Confirm — I can't do this job
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowResignForm(false)
+                      setResignNote('')
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '0.6rem',
+                      background: 'white',
+                      color: '#333',
+                      border: '1px solid #ccc',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                    }}
+                  >
+                    Never mind
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {supplies.length > 0 && (
