@@ -16,6 +16,11 @@ export default function JobPage() {
   const [dateConfirmed, setDateConfirmed] = useState(false)
   const [showResignForm, setShowResignForm] = useState(false)
   const [resignNote, setResignNote] = useState('')
+  const [changingDate, setChangingDate] = useState(false)
+  const [cleanerNotes, setCleanerNotes] = useState('')
+  const [notesSaved, setNotesSaved] = useState(false)
+  const [showAddSupply, setShowAddSupply] = useState(false)
+  const [newSupply, setNewSupply] = useState({ name: '', category: '', status: 'low' })
 
   useEffect(() => {
     fetchJob()
@@ -37,6 +42,11 @@ export default function JobPage() {
     }
 
     setJob(jobData)
+
+    if (jobData.cleaner_notes) {
+      setCleanerNotes(jobData.cleaner_notes)
+      setNotesSaved(true)
+    }
 
     if (jobData.status === 'confirmed' || jobData.status === 'in_progress') {
       setDateConfirmed(true)
@@ -94,6 +104,63 @@ export default function JobPage() {
 
     setJob(prev => ({ ...prev, status: 'confirmed', scheduled_date: selectedDate }))
     setDateConfirmed(true)
+    setSubmitting(false)
+  }
+
+  async function changeDate() {
+    if (!selectedDate) return
+    setSubmitting(true)
+
+    await supabase
+      .from('cleaning_job')
+      .update({ scheduled_date: selectedDate })
+      .eq('job_token', token)
+
+    setJob(prev => ({ ...prev, scheduled_date: selectedDate }))
+    setChangingDate(false)
+    setSubmitting(false)
+  }
+
+  async function saveNotes() {
+    setSubmitting(true)
+
+    await supabase
+      .from('cleaning_job')
+      .update({ cleaner_notes: cleanerNotes })
+      .eq('job_token', token)
+
+    setNotesSaved(true)
+    setSubmitting(false)
+  }
+
+  async function addSupplyItem() {
+    if (!newSupply.name.trim()) return
+    setSubmitting(true)
+
+    const { data: item } = await supabase
+      .from('supply_item')
+      .insert([{
+        property_id: job.property_id,
+        name: newSupply.name.trim(),
+        category: newSupply.category.trim() || null,
+        current_status: newSupply.status,
+      }])
+      .select()
+      .single()
+
+    if (item && newSupply.status !== 'ok') {
+      await supabase
+        .from('supply_flag')
+        .insert([{
+          job_id: job.id,
+          supply_item_id: item.id,
+          status: newSupply.status,
+        }])
+    }
+
+    setNewSupply({ name: '', category: '', status: 'low' })
+    setShowAddSupply(false)
+    await fetchJob()
     setSubmitting(false)
   }
 
@@ -349,65 +416,91 @@ export default function JobPage() {
               📅 Add to Calendar
             </button>
 
-            {!showResignForm ? (
-              <button
-                onClick={() => setShowResignForm(true)}
-                style={{
-                  marginTop: '0.5rem',
-                  display: 'block',
-                  background: 'none',
-                  border: 'none',
-                  color: '#888',
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  padding: 0,
-                  textDecoration: 'underline',
-                }}
-              >
-                I can no longer do this job
-              </button>
-            ) : (
+            {!showResignForm && !changingDate && (
+              <div style={{ marginTop: '0.5rem', display: 'flex', gap: '1rem' }}>
+                <button
+                  onClick={() => {
+                    setChangingDate(true)
+                    setSelectedDate(job.scheduled_date)
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#888',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Change my date
+                </button>
+                <button
+                  onClick={() => setShowResignForm(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#888',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    padding: 0,
+                    textDecoration: 'underline',
+                  }}
+                >
+                  I can no longer do this job
+                </button>
+              </div>
+            )}
+
+            {changingDate && (
               <div style={{ marginTop: '0.75rem', borderTop: '1px solid #b8dbb8', paddingTop: '0.75rem' }}>
                 <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#155724' }}>
-                  Please let us know why if you can:
+                  Select a new date:
                 </p>
-                <input
-                  type="text"
-                  placeholder="Optional reason..."
-                  value={resignNote}
-                  onChange={e => setResignNote(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    borderRadius: '4px',
-                    border: '1px solid #b8dbb8',
-                    boxSizing: 'border-box',
-                    fontSize: '0.9rem',
-                    marginBottom: '0.5rem',
-                  }}
-                />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
+                  {availableDates.map(date => (
+                    <button
+                      key={date}
+                      onClick={() => setSelectedDate(date)}
+                      style={{
+                        padding: '0.6rem 1rem',
+                        borderRadius: '4px',
+                        border: '2px solid',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        background: selectedDate === date ? '#d4edda' : 'white',
+                        borderColor: selectedDate === date ? '#28a745' : '#ccc',
+                        color: selectedDate === date ? '#155724' : '#333',
+                        fontWeight: selectedDate === date ? 'bold' : 'normal',
+                      }}
+                    >
+                      {date}
+                    </button>
+                  ))}
+                </div>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button
-                    onClick={resign}
-                    disabled={submitting}
+                    onClick={changeDate}
+                    disabled={!selectedDate || submitting}
                     style={{
                       flex: 1,
                       padding: '0.6rem',
-                      background: '#dc3545',
+                      background: '#28a745',
                       color: 'white',
                       border: 'none',
                       borderRadius: '4px',
                       cursor: 'pointer',
                       fontSize: '0.9rem',
                       fontWeight: '600',
+                      opacity: !selectedDate ? 0.5 : 1,
                     }}
                   >
-                    Confirm — I can't do this job
+                    Confirm New Date
                   </button>
                   <button
                     onClick={() => {
-                      setShowResignForm(false)
-                      setResignNote('')
+                      setChangingDate(false)
+                      setSelectedDate(job.scheduled_date)
                     }}
                     style={{
                       flex: 1,
@@ -425,11 +518,150 @@ export default function JobPage() {
                 </div>
               </div>
             )}
+
+            {!changingDate && (
+              <>
+                {!showResignForm ? (
+                  <div style={{ marginTop: '0.5rem' }} />
+                ) : (
+                  <div style={{ marginTop: '0.75rem', borderTop: '1px solid #b8dbb8', paddingTop: '0.75rem' }}>
+                    <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#155724' }}>
+                      Please let us know why if you can:
+                    </p>
+                    <input
+                      type="text"
+                      placeholder="Optional reason..."
+                      value={resignNote}
+                      onChange={e => setResignNote(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: '4px',
+                        border: '1px solid #b8dbb8',
+                        boxSizing: 'border-box',
+                        fontSize: '0.9rem',
+                        marginBottom: '0.5rem',
+                      }}
+                    />
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        onClick={resign}
+                        disabled={submitting}
+                        style={{
+                          flex: 1,
+                          padding: '0.6rem',
+                          background: '#dc3545',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                          fontWeight: '600',
+                        }}
+                      >
+                        Confirm — I can't do this job
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowResignForm(false)
+                          setResignNote('')
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '0.6rem',
+                          background: 'white',
+                          color: '#333',
+                          border: '1px solid #ccc',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '0.9rem',
+                        }}
+                      >
+                        Never mind
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
+
+          <div style={styles.card}>
+            <h2 style={{ marginTop: 0 }}>📝 Cleaning Notes</h2>
+            <p style={{ color: '#666', fontSize: '0.9rem' }}>
+              Any observations, issues, or things the owner should know about this job.
+            </p>
+            {notesSaved ? (
+              <div>
+                <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem' }}>{cleanerNotes}</p>
+                <button
+                  onClick={() => setNotesSaved(false)}
+                  style={{ fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.25rem' }}
+                >
+                  ✏️ Edit notes
+                </button>
+              </div>
+            ) : (
+              <div>
+                <textarea
+                  value={cleanerNotes}
+                  onChange={e => setCleanerNotes(e.target.value)}
+                  placeholder="e.g. Back door was left unlocked, master bath needs new shower curtain liner..."
+                  rows={4}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    borderRadius: '4px',
+                    border: '1px solid #ccc',
+                    boxSizing: 'border-box',
+                    fontSize: '0.95rem',
+                    resize: 'vertical',
+                  }}
+                />
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <button
+                    onClick={saveNotes}
+                    disabled={submitting || !cleanerNotes.trim()}
+                    style={{
+                      flex: 1,
+                      padding: '0.6rem',
+                      background: '#2563eb',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      opacity: !cleanerNotes.trim() ? 0.5 : 1,
+                    }}
+                  >
+                    Save Notes
+                  </button>
+                  {cleanerNotes.trim() === '' && (
+                    <button
+                      onClick={() => setNotesSaved(true)}
+                      style={{
+                        flex: 1,
+                        padding: '0.6rem',
+                        background: 'white',
+                        color: '#333',
+                        border: '1px solid #ccc',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                      }}
+                    >
+                      Skip
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
 
           {supplies.length > 0 && (
             <div style={styles.card}>
-
               <h2 style={{ marginTop: 0 }}>🧴 Supply Check</h2>
               <p style={{ color: '#666', fontSize: '0.9rem' }}>
                 Please mark anything that is running low or out.
@@ -488,13 +720,47 @@ export default function JobPage() {
                         ))}
                       </div>
 
-                      <input
-                        type="text"
-                        placeholder="Optional note..."
-                        value={notes[s.id] || ''}
-                        onChange={e => setNote(s.id, e.target.value)}
-                        style={{ marginTop: '0.5rem', width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }}
-                      />
+                      {notes[s.id] !== undefined && notes[s.id] !== '' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                          <input
+                            type="text"
+                            placeholder="Optional note..."
+                            value={notes[s.id].trim()}
+                            onChange={e => setNote(s.id, e.target.value)}
+                            style={{ flex: 1, padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }}
+                          />
+                          <button
+                            onClick={() => setNote(s.id, '')}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#888',
+                              fontSize: '1.1rem',
+                              cursor: 'pointer',
+                              padding: '0 0.25rem',
+                              lineHeight: 1,
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setNote(s.id, ' ')}
+                          style={{
+                            marginTop: '0.5rem',
+                            background: 'none',
+                            border: 'none',
+                            color: '#888',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            padding: 0,
+                            textDecoration: 'underline',
+                          }}
+                        >
+                          + Add note
+                        </button>
+                      )}
 
                     </div>
                   ))}
@@ -526,6 +792,120 @@ export default function JobPage() {
                   {Object.keys(flags).length === 0 && (
                     <p style={{ fontSize: '0.85rem', color: '#666' }}>Mark at least one item above to submit.</p>
                   )}
+
+                  <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #eee' }}>
+                    {!showAddSupply ? (
+                      <button
+                        onClick={() => setShowAddSupply(true)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#888',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer',
+                          padding: 0,
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        + Something missing from this list?
+                      </button>
+                    ) : (
+                      <div>
+                        <p style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', fontWeight: '600' }}>
+                          Add a supply item:
+                        </p>
+                        <input
+                          type="text"
+                          placeholder="Item name (required)"
+                          value={newSupply.name}
+                          onChange={e => setNewSupply(prev => ({ ...prev, name: e.target.value }))}
+                          style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box', marginBottom: '0.5rem' }}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Category (e.g. Kitchen, Bathroom)"
+                          value={newSupply.category}
+                          onChange={e => setNewSupply(prev => ({ ...prev, category: e.target.value }))}
+                          style={{ width: '100%', padding: '0.4rem', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box', marginBottom: '0.5rem' }}
+                        />
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                          {['ok', 'low', 'out'].map(status => (
+                            <button
+                              key={status}
+                              onClick={() => setNewSupply(prev => ({ ...prev, status }))}
+                              style={{
+                                flex: 1,
+                                padding: '0.35rem',
+                                borderRadius: '4px',
+                                border: '2px solid',
+                                cursor: 'pointer',
+                                fontWeight: newSupply.status === status ? 'bold' : 'normal',
+                                background:
+                                  newSupply.status === status
+                                    ? status === 'ok' ? '#d4edda'
+                                      : status === 'low' ? '#fff3cd'
+                                        : '#f8d7da'
+                                    : 'white',
+                                borderColor:
+                                  newSupply.status === status
+                                    ? status === 'ok' ? '#28a745'
+                                      : status === 'low' ? '#ffc107'
+                                        : '#dc3545'
+                                    : '#ccc',
+                                color:
+                                  newSupply.status === status
+                                    ? status === 'ok' ? '#155724'
+                                      : status === 'low' ? '#856404'
+                                        : '#721c24'
+                                    : '#333',
+                                fontSize: '0.85rem',
+                              }}
+                            >
+                              {status === 'ok' ? '✓ OK' : status === 'low' ? '⚠️ Low' : '❌ Out'}
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            onClick={addSupplyItem}
+                            disabled={submitting || !newSupply.name.trim()}
+                            style={{
+                              flex: 1,
+                              padding: '0.6rem',
+                              background: '#2563eb',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.9rem',
+                              fontWeight: '600',
+                              opacity: !newSupply.name.trim() ? 0.5 : 1,
+                            }}
+                          >
+                            Add Item
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowAddSupply(false)
+                              setNewSupply({ name: '', category: '', status: 'low' })
+                            }}
+                            style={{
+                              flex: 1,
+                              padding: '0.6rem',
+                              background: 'white',
+                              color: '#333',
+                              border: '1px solid #ccc',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.9rem',
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
