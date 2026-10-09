@@ -8,6 +8,15 @@ const ICAL_SOURCES = [
     { key: 'vrbo', label: 'VRBO', url: import.meta.env.VITE_VRBO_ICAL_URL },
 ]
 
+const REAL_BOOKING_PATTERNS = [
+    /^reserved/i,
+]
+
+function isRealBooking(title) {
+    if (!title) return false
+    return REAL_BOOKING_PATTERNS.some(pattern => pattern.test(title.trim()))
+}
+
 export default function ICalSync({ onSync }) {
     const [syncing, setSyncing] = useState(false)
     const [results, setResults] = useState(null)
@@ -33,23 +42,24 @@ export default function ICalSync({ onSync }) {
                 const text = await response.text()
                 const events = parseICal(text)
                 let added = 0
+                let pending = 0
                 let skipped = 0
 
+                const today = new Date()
+                const cutoff = new Date()
+                cutoff.setDate(today.getDate() - 30)
+
                 for (const event of events) {
-                    if (!event.start || !event.end) continue
-                    if (event.summary?.toLowerCase().includes('blocked')) continue
-                    const today = new Date()
-                    const cutoff = new Date()
-                    cutoff.setDate(today.getDate() - 30)
+                    if (!event.start || !event.end || !event.uid) continue
+
                     const checkOut = new Date(event.end)
                     if (checkOut < cutoff) continue
 
+                    // Check if we've already processed this UID
                     const { data: existing } = await supabase
-                        .from('stay')
-                        .select('id')
-                        .eq('property_id', PROPERTY_ID)
-                        .eq('check_in', event.start)
-                        .eq('check_out', event.end)
+                        .from('ical_event')
+                        .select('id, status')
+                        .eq('uid', event.uid)
                         .eq('source', source.key)
                         .single()
 
@@ -58,20 +68,53 @@ export default function ICalSync({ onSync }) {
                         continue
                     }
 
-                    await supabase
-                        .from('stay')
-                        .insert([{
-                            property_id: PROPERTY_ID,
-                            check_in: event.start,
-                            check_out: event.end,
-                            guest_name: event.summary || 'Guest',
-                            source: source.key,
-                        }])
+                    if (isRealBooking(event.summary)) {
+                        const { data: stay } = await supabase
+                            .from('stay')
+                            .insert([{
+                                property_id: PROPERTY_ID,
+                                check_in: event.start,
+                                check_out: event.end,
+                                guest_name: event.summary,
+                                source: source.key,
+                                ical_uid: event.uid,
+                            }])
+                            .select()
+                            .single()
 
-                    added++
+                        await supabase
+                            .from('ical_event')
+                            .insert([{
+                                property_id: PROPERTY_ID,
+                                uid: event.uid,
+                                source: source.key,
+                                title: event.summary,
+                                check_in: event.start,
+                                check_out: event.end,
+                                status: 'guest',
+                                stay_id: stay?.id || null,
+                            }])
+
+                        added++
+                    } else {
+                        // Hold for review
+                        await supabase
+                            .from('ical_event')
+                            .insert([{
+                                property_id: PROPERTY_ID,
+                                uid: event.uid,
+                                source: source.key,
+                                title: event.summary,
+                                check_in: event.start,
+                                check_out: event.end,
+                                status: 'pending',
+                            }])
+
+                        pending++
+                    }
                 }
 
-                summary.push({ source: source.label, added, skipped })
+                summary.push({ source: source.label, added, pending, skipped })
             } catch (err) {
                 summary.push({ source: source.label, error: err.message })
             }
@@ -84,7 +127,7 @@ export default function ICalSync({ onSync }) {
 
     function parseICal(text) {
         const events = []
-        const lines = text.replace(/\r\n /g, '').split(/\r\n|\n/)
+        const lines = unfoldLines(text)
         let current = null
 
         for (const line of lines) {
@@ -100,11 +143,20 @@ export default function ICalSync({ onSync }) {
                     current.end = parseDate(line.split(':')[1])
                 } else if (line.startsWith('SUMMARY')) {
                     current.summary = line.split(':').slice(1).join(':').trim()
+                } else if (line.startsWith('UID')) {
+                    current.uid = line.split(':').slice(1).join(':').trim()
                 }
             }
         }
 
         return events
+    }
+
+    function unfoldLines(text) {
+        return text
+            .replace(/\r\n /g, '')
+            .replace(/\r\n\t/g, '')
+            .split(/\r\n|\n/)
     }
 
     function parseDate(raw) {
@@ -118,7 +170,7 @@ export default function ICalSync({ onSync }) {
         <section style={{ marginTop: '2rem' }}>
             <h2>Calendar Sync</h2>
             <p style={{ color: '#666', fontSize: '0.9rem' }}>
-                Imports bookings from Airbnb and VRBO into your stays list.
+                Imports bookings from Airbnb and VRBO. Real bookings are added automatically; ambiguous events are held for your review.
             </p>
             <button
                 onClick={syncAll}
@@ -140,9 +192,9 @@ export default function ICalSync({ onSync }) {
                         }}>
                             <strong>{r.source}</strong>
                             {r.error && <span> — Error: {r.error}</span>}
-                            {r.skipped && r.reason && <span> — {r.reason}</span>}
-                            {!r.error && r.added !== undefined && (
-                                <span> — {r.added} added, {r.skipped} already existed</span>
+                            {r.reason && <span> — {r.reason}</span>}
+                            {!r.error && !r.reason && (
+                                <span> — {r.added} added, {r.pending} pending review, {r.skipped} already processed</span>
                             )}
                         </div>
                     ))}

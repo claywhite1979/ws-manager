@@ -9,6 +9,7 @@ import Supplies from './Supplies'
 import ICalSync from './ICalSync'
 import Modal from './Modal'
 import CleanerForm from './CleanerForm'
+import SyncReview from './SyncReview'
 
 function Dashboard() {
   const { user } = useUser()
@@ -151,6 +152,7 @@ function Dashboard() {
       <Stays refreshTrigger={stayRefresh} />
       <CleaningJobs />
       <Supplies />
+      <SyncReview onReviewed={triggerStayRefresh} />
       <ICalSync onSync={triggerStayRefresh} />
       {showCleanerForm && (
         <Modal title="Add Cleaner" onClose={() => setShowCleanerForm(false)}>
