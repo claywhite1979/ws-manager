@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Modal from './Modal'
 import StayForm from './StayForm'
+import StayEditForm from './StayEditForm'
 import JobOfferForm from './JobOfferForm'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
@@ -13,6 +14,7 @@ export default function Stays(props) {
   const [composedText, setComposedText] = useState(null)
   const [showStayForm, setShowStayForm] = useState(false)
   const [offerStay, setOfferStay] = useState(null)
+  const [editingStay, setEditingStay] = useState(null)
 
   useEffect(() => {
     fetchAll()
@@ -22,10 +24,10 @@ export default function Stays(props) {
     setLoading(true)
 
     const { data: stayData } = await supabase
-  .from('stay')
-  .select('*, cleaning_job(*, cleaner(*))')
-  .eq('property_id', PROPERTY_ID)
-  .order('check_in', { ascending: true })
+      .from('stay')
+      .select('*, cleaning_job(*, cleaner(*))')
+      .eq('property_id', PROPERTY_ID)
+      .order('check_in', { ascending: true })
 
     const { data: cleanerData } = await supabase
       .from('cleaner')
@@ -48,6 +50,15 @@ export default function Stays(props) {
   async function deleteStay(id) {
     if (!confirm('Remove this stay?')) return
     await supabase.from('stay').delete().eq('id', id)
+    fetchAll()
+  }
+
+  async function updateStay(data) {
+    await supabase
+      .from('stay')
+      .update(data)
+      .eq('id', editingStay.id)
+    setEditingStay(null)
     fetchAll()
   }
 
@@ -322,14 +333,34 @@ Reply if you have any questions. Thanks!`
                   📌 {s.source}
                 </p>
               </div>
-              <button
-                onClick={() => deleteStay(s.id)}
-                style={{ color: 'red', cursor: 'pointer', fontSize: '0.85rem' }}
-              >
-                Remove
-              </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-end' }}>
+                <button
+                  onClick={() => setEditingStay(s)}
+                  style={{ cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '0.2rem 0.5rem' }}
+                >
+                  ✏️ Edit
+                </button>
+                <button
+                  onClick={() => deleteStay(s.id)}
+                  style={{ color: 'red', cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: '1px solid #ffcccc', borderRadius: '4px', padding: '0.2rem 0.5rem' }}
+                >
+                  Remove
+                </button>
+              </div>
             </div>
             {getStatusDisplay(s)}
+            {s.notes && (
+              <p style={{
+                margin: '0.5rem 0',
+                fontSize: '0.85rem',
+                padding: '0.4rem 0.75rem',
+                background: '#f8f9fa',
+                borderRadius: '4px',
+                borderLeft: '3px solid #2563eb',
+              }}>
+                {s.notes}
+              </p>
+            )}
           </div>
         ))
       }
@@ -349,6 +380,15 @@ Reply if you have any questions. Thanks!`
             cleaners={cleaners.filter(c => !getDeclinedCleaners(offerStay).includes(c.name))}
             onSave={createOffer}
             onCancel={() => setOfferStay(null)}
+          />
+        </Modal>
+      )}
+      {editingStay && (
+        <Modal title="Edit Stay" onClose={() => setEditingStay(null)}>
+          <StayEditForm
+            initial={editingStay}
+            onSave={updateStay}
+            onCancel={() => setEditingStay(null)}
           />
         </Modal>
       )}
