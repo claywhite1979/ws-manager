@@ -90,11 +90,25 @@ function Dashboard() {
   if (loading) return <p>Loading...</p>
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>Whitetail Spur Management Portal</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span>👋 {user?.firstName || user?.emailAddresses[0]?.emailAddress}</span>
+    <div style={{ padding: '1.5rem', fontFamily: 'sans-serif', maxWidth: '960px', margin: '0 auto', boxSizing: 'border-box' }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        flexWrap: 'wrap',
+        gap: '0.5rem',
+        marginBottom: '1rem',
+      }}>
+        <h1 style={{
+          margin: 0,
+          fontSize: 'clamp(1.2rem, 4vw, 1.8rem)',
+          lineHeight: '1.3',
+          flex: '1 1 200px',
+        }}>
+          Whitetail Spur Management Portal
+        </h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.9rem' }}>👋 {user?.firstName || user?.emailAddresses[0]?.emailAddress}</span>
           <UserButton />
         </div>
       </div>
