@@ -13,7 +13,7 @@ import SyncReview from './SyncReview'
 
 function Dashboard() {
   const { user } = useUser()
-  const ALLOWED_EMAILS = ['claywhite1979@gmail.com', 'hpkcllc@gmail.com', "imkkristenwhite@gmail.com"]
+  const ALLOWED_EMAILS = ['claywhite1979@gmail.com', 'hpkcllc@gmail.com', 'imkkristenwhite@gmail.com', 'alba.villa@cox.net']
   const [stayRefresh, setStayRefresh] = useState(0)
   const [showCleanerForm, setShowCleanerForm] = useState(false)
 
