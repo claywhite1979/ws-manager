@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Modal from './Modal'
 import SupplyForm from './SupplyForm'
+import SupplyEditForm from './SupplyEditForm'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
@@ -10,6 +11,7 @@ export default function Supplies() {
     const [flags, setFlags] = useState([])
     const [loading, setLoading] = useState(true)
     const [showSupplyForm, setShowSupplyForm] = useState(false)
+    const [editingSupply, setEditingSupply] = useState(null)
 
     useEffect(() => {
         fetchAll()
@@ -45,6 +47,15 @@ export default function Supplies() {
     async function deleteSupply(id) {
         if (!confirm('Remove this supply item?')) return
         await supabase.from('supply_item').delete().eq('id', id)
+        fetchAll()
+    }
+
+    async function updateSupply(data) {
+        await supabase
+            .from('supply_item')
+            .update(data)
+            .eq('id', editingSupply.id)
+        setEditingSupply(null)
         fetchAll()
     }
 
@@ -140,6 +151,12 @@ export default function Supplies() {
                             </a>
                         )}
                         <button
+                            onClick={() => setEditingSupply(s)}
+                            style={{ cursor: 'pointer', marginTop: '0.5rem', display: 'block' }}
+                        >
+                            ✏️ Edit
+                        </button>
+                        <button
                             onClick={() => deleteSupply(s.id)}
                             style={{ color: 'red', cursor: 'pointer', marginTop: '0.5rem', display: 'block' }}
                         >
@@ -156,6 +173,15 @@ export default function Supplies() {
                     />
                 </Modal>
             )}
+            {editingSupply && (
+  <Modal title="Edit Supply Item" onClose={() => setEditingSupply(null)}>
+    <SupplyEditForm
+      initial={editingSupply}
+      onSave={updateSupply}
+      onCancel={() => setEditingSupply(null)}
+    />
+  </Modal>
+)}
         </section>
     )
 }

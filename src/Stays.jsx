@@ -22,10 +22,10 @@ export default function Stays(props) {
     setLoading(true)
 
     const { data: stayData } = await supabase
-      .from('stay')
-      .select('*, cleaning_job(*, cleaner(*))')
-      .eq('property_id', PROPERTY_ID)
-      .order('check_in', { ascending: true })
+  .from('stay')
+  .select('*, cleaning_job(*, cleaner(*))')
+  .eq('property_id', PROPERTY_ID)
+  .order('check_in', { ascending: true })
 
     const { data: cleanerData } = await supabase
       .from('cleaner')
@@ -222,6 +222,19 @@ Reply if you have any questions. Thanks!`
           <p style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>
             {job.cleaner?.name} — {job.scheduled_date}
           </p>
+          {job.cleaner_notes && (
+            <div style={{
+              marginTop: '0.5rem',
+              padding: '0.5rem 0.75rem',
+              background: '#f8f9fa',
+              borderRadius: '4px',
+              borderLeft: '3px solid #2563eb',
+              fontSize: '0.85rem',
+            }}>
+              <strong>Cleaner notes:</strong>
+              <p style={{ margin: '0.25rem 0 0', whiteSpace: 'pre-wrap' }}>{job.cleaner_notes}</p>
+            </div>
+          )}
           <button
             onClick={() => {
               const window = calculateWindow(stay, stays)
@@ -251,6 +264,19 @@ Reply if you have any questions. Thanks!`
           <p style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>
             {job.cleaner?.name} — {job.scheduled_date}
           </p>
+          {job.cleaner_notes && (
+            <div style={{
+              marginTop: '0.5rem',
+              padding: '0.5rem 0.75rem',
+              background: '#f8f9fa',
+              borderRadius: '4px',
+              borderLeft: '3px solid #2563eb',
+              fontSize: '0.85rem',
+            }}>
+              <strong>Cleaner notes:</strong>
+              <p style={{ margin: '0.25rem 0 0', whiteSpace: 'pre-wrap' }}>{job.cleaner_notes}</p>
+            </div>
+          )}
         </div>
       )
     }
