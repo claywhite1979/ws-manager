@@ -128,8 +128,6 @@ function Dashboard() {
         }
       </section>
 
-  
-
       <Stays refreshTrigger={stayRefresh} />
 
       <section style={{ marginTop: '2rem' }}>
