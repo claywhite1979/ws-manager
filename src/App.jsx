@@ -128,6 +128,10 @@ function Dashboard() {
         }
       </section>
 
+  
+
+      <Stays refreshTrigger={stayRefresh} />
+
       <section style={{ marginTop: '2rem' }}>
         <h2>Cleaners</h2>
         <button onClick={() => setShowCleanerForm(true)}>+ Add Cleaner</button>
@@ -149,7 +153,6 @@ function Dashboard() {
         }
       </section>
 
-      <Stays refreshTrigger={stayRefresh} />
       <CleaningJobs />
       <Supplies />
       <SyncReview onReviewed={triggerStayRefresh} />

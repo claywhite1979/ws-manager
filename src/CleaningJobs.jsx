@@ -118,7 +118,7 @@ Reply if you have any questions. Thanks!`
 
   return (
     <section style={{ marginTop: '2rem' }}>
-      <h2>Cleaning Jobs</h2>
+      <h2>Stand-AloneCleaning Jobs</h2>
       <button onClick={fetchAll} style={{ marginLeft: '1rem' }}>↻ Refresh</button>
       <button onClick={addJob}>+ Schedule Job</button>
 
