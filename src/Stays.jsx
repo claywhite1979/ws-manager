@@ -15,10 +15,11 @@ export default function Stays(props) {
   const [showStayForm, setShowStayForm] = useState(false)
   const [offerStay, setOfferStay] = useState(null)
   const [editingStay, setEditingStay] = useState(null)
+  const [showArchived, setShowArchived] = useState(false)
 
   useEffect(() => {
     fetchAll()
-  }, [props.refreshTrigger])
+  }, [props.refreshTrigger, showArchived])
 
   async function fetchAll() {
     setLoading(true)
@@ -27,6 +28,7 @@ export default function Stays(props) {
       .from('stay')
       .select('*, cleaning_job(*, cleaner(*))')
       .eq('property_id', PROPERTY_ID)
+      .eq('archived', showArchived)
       .order('check_in', { ascending: true })
 
     const { data: cleanerData } = await supabase
@@ -50,6 +52,23 @@ export default function Stays(props) {
   async function deleteStay(id) {
     if (!confirm('Remove this stay?')) return
     await supabase.from('stay').delete().eq('id', id)
+    fetchAll()
+  }
+
+  async function archiveStay(id) {
+    if (!confirm('Archive this stay? It will be hidden from the dashboard but kept in your records.')) return
+    await supabase
+      .from('stay')
+      .update({ archived: true })
+      .eq('id', id)
+    fetchAll()
+  }
+
+  async function unarchiveStay(id) {
+    await supabase
+      .from('stay')
+      .update({ archived: false })
+      .eq('id', id)
     fetchAll()
   }
 
@@ -299,10 +318,15 @@ Reply if you have any questions. Thanks!`
 
   return (
     <section style={{ marginTop: '2rem' }}>
-      <h2>Stays</h2>
+      <h2>Stays {showArchived && <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: '#666', marginLeft: '0.5rem' }}>— viewing archived</span>}</h2>
       <button onClick={() => setShowStayForm(true)}>+ Add Stay</button>
       <button onClick={fetchAll} style={{ marginLeft: '1rem' }}>↻ Refresh</button>
-
+      <button
+        onClick={() => setShowArchived(prev => !prev)}
+        style={{ marginLeft: '1rem', cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: 'none', color: '#666', textDecoration: 'underline' }}
+      >
+        {showArchived ? 'Hide archived' : 'Show archived'}
+      </button>
       {composedText && (
         <div style={{ marginTop: '1rem', padding: '1rem', background: '#f0f7ff', border: '1px solid #b3d4ff', borderRadius: '4px' }}>
           <h3 style={{ marginTop: 0 }}>📱 Ready to Send</h3>
@@ -340,6 +364,22 @@ Reply if you have any questions. Thanks!`
                 >
                   ✏️ Edit
                 </button>
+                {!showArchived && (
+                  <button
+                    onClick={() => archiveStay(s.id)}
+                    style={{ cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '0.2rem 0.5rem', color: '#666' }}
+                  >
+                    📦 Archive
+                  </button>
+                )}
+                {showArchived && (
+                  <button
+                    onClick={() => unarchiveStay(s.id)}
+                    style={{ cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '0.2rem 0.5rem', color: '#155724' }}
+                  >
+                    📬 Unarchive
+                  </button>
+                )}
                 <button
                   onClick={() => deleteStay(s.id)}
                   style={{ color: 'red', cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: '1px solid #ffcccc', borderRadius: '4px', padding: '0.2rem 0.5rem' }}
