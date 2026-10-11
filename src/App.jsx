@@ -92,7 +92,7 @@ function Dashboard() {
   if (loading) return <p>Loading...</p>
 
   return (
-    <div style={{ padding: '1.5rem', fontFamily: 'sans-serif', maxWidth: '960px', margin: '0 auto', boxSizing: 'border-box' }}>
+    <div className="page-container">
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -115,15 +115,17 @@ function Dashboard() {
         </div>
       </div>
 
-      <section>
-        <h2>Properties</h2>
-        <button onClick={addProperty}>+ Add Property</button>
+      <section className="section">
+        <div className="section-header">
+          <h2>Properties</h2>
+          <button className="btn btn-primary btn-sm" onClick={addProperty}>+ Add Property</button>
+        </div>
         {properties.length === 0
-          ? <p>No properties yet.</p>
+          ? <p className="empty-state">No properties yet.</p>
           : properties.map(p => (
-            <div key={p.id} style={{ border: '1px solid #ccc', padding: '1rem', marginTop: '0.5rem', borderRadius: '4px' }}>
+            <div key={p.id} className="card" style={{ marginTop: 'var(--spacing-sm)' }}>
               <strong>{p.name}</strong>
-              <p>{p.address}</p>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--spacing-xs)' }}>{p.address}</p>
             </div>
           ))
         }
@@ -131,22 +133,29 @@ function Dashboard() {
 
       <Stays refreshTrigger={stayRefresh} />
 
-      <section style={{ marginTop: '2rem' }}>
-        <h2>Cleaners</h2>
-        <button onClick={() => setShowCleanerForm(true)}>+ Add Cleaner</button>
+      <section className="section">
+        <div className="section-header">
+          <h2>Cleaners</h2>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowCleanerForm(true)}>+ Add Cleaner</button>
+        </div>
         {cleaners.length === 0
-          ? <p>No cleaners yet.</p>
+          ? <p className="empty-state">No cleaners yet.</p>
           : cleaners.map(c => (
-            <div key={c.id} style={{ border: '1px solid #ccc', padding: '1rem', marginTop: '0.5rem', borderRadius: '4px' }}>
-              <strong>{c.name}</strong>
-              <p>📞 {c.phone}</p>
-              <p>💵 Default rate: ${c.default_rate}</p>
-              <button
-                onClick={() => deleteCleaner(c.id)}
-                style={{ color: 'red', cursor: 'pointer', marginTop: '0.5rem' }}
-              >
-                Remove
-              </button>
+            <div key={c.id} className="card" style={{ marginTop: 'var(--spacing-sm)' }}>
+              <div className="row-between">
+                <div>
+                  <strong>{c.name}</strong>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--spacing-xs)' }}>📞 {c.phone}</p>
+                  <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>💵 Default rate: ${c.default_rate}</p>
+                </div>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => deleteCleaner(c.id)}
+                  style={{ color: 'var(--color-danger)' }}
+                >
+                  Remove
+                </button>
+              </div>
             </div>
           ))
         }
@@ -176,12 +185,18 @@ function App() {
       <Route path="/*" element={
         <>
           <SignedOut>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontFamily: 'sans-serif' }}>
-              <div style={{ textAlign: 'center' }}>
-                <h1>WS Manager</h1>
-                <p>Please sign in to continue.</p>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100vh',
+              background: 'var(--color-surface)',
+            }}>
+              <div className="card" style={{ textAlign: 'center', maxWidth: '400px', width: '100%' }}>
+                <h1 style={{ marginBottom: 'var(--spacing-sm)' }}>Whitetail Spur</h1>
+                <p style={{ color: 'var(--color-text-muted)', marginBottom: 'var(--spacing-lg)' }}>Management Portal</p>
                 <SignInButton mode="modal">
-                  <button style={{ padding: '0.75rem 1.5rem', fontSize: '1rem', cursor: 'pointer' }}>
+                  <button className="btn btn-primary btn-lg btn-block">
                     Sign In
                   </button>
                 </SignInButton>
