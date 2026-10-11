@@ -10,6 +10,7 @@ import ICalSync from './ICalSync'
 import Modal from './Modal'
 import CleanerForm from './CleanerForm'
 import SyncReview from './SyncReview'
+import Payments from './Payments'
 
 function Dashboard() {
   const { user } = useUser()
@@ -152,6 +153,7 @@ function Dashboard() {
       </section>
 
       <CleaningJobs />
+      <Payments />
       <Supplies />
       <SyncReview onReviewed={triggerStayRefresh} />
       <ICalSync onSync={triggerStayRefresh} />

@@ -64,6 +64,23 @@ export default function Stays(props) {
     fetchAll()
   }
 
+  async function markJobComplete(jobId) {
+    await supabase
+      .from('cleaning_job')
+      .update({ status: 'complete' })
+      .eq('id', jobId)
+    fetchAll()
+  }
+
+  async function undoJobComplete(jobId) {
+    if (!confirm('Mark this job as not complete?')) return
+    await supabase
+      .from('cleaning_job')
+      .update({ status: 'confirmed' })
+      .eq('id', jobId)
+    fetchAll()
+  }
+
   async function unarchiveStay(id) {
     await supabase
       .from('stay')
@@ -232,6 +249,12 @@ Reply if you have any questions. Thanks!`
           >
             📱 Resend Text
           </button>
+          <button
+            onClick={() => markJobComplete(job.id)}
+            style={{ marginTop: '0.25rem', cursor: 'pointer', fontSize: '0.85rem', display: 'block', color: '#2563eb' }}
+          >
+            ✅ Mark Complete
+          </button>
         </div>
       )
     }
@@ -291,6 +314,24 @@ Reply if you have any questions. Thanks!`
           }}>
             ✅ Complete
           </span>
+          <button
+            onClick={() => undoJobComplete(job.id)}
+            style={{
+              marginTop: '0.25rem',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              display: 'block',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              color: '#666',
+              background: 'none',
+              border: 'none',
+              textDecoration: 'underline',
+              padding: 0,
+            }}
+          >
+            Undo complete
+          </button>
           <p style={{ fontSize: '0.85rem', margin: '0.25rem 0' }}>
             {job.cleaner?.name} — {job.scheduled_date}
           </p>

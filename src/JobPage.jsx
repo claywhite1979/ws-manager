@@ -21,6 +21,7 @@ export default function JobPage() {
   const [notesSaved, setNotesSaved] = useState(false)
   const [showAddSupply, setShowAddSupply] = useState(false)
   const [newSupply, setNewSupply] = useState({ name: '', category: '', status: 'low' })
+  const [showCompleteForm, setShowCompleteForm] = useState(false)
 
   useEffect(() => {
     fetchJob()
@@ -188,6 +189,27 @@ export default function JobPage() {
       .eq('job_token', token)
 
     setJob(prev => ({ ...prev, status: 'declined' }))
+    setSubmitting(false)
+  }
+
+  async function markComplete() {
+    setSubmitting(true)
+    await supabase
+      .from('cleaning_job')
+      .update({ status: 'complete' })
+      .eq('job_token', token)
+    setJob(prev => ({ ...prev, status: 'complete' }))
+    setShowCompleteForm(false)
+    setSubmitting(false)
+  }
+
+  async function undoComplete() {
+    setSubmitting(true)
+    await supabase
+      .from('cleaning_job')
+      .update({ status: 'confirmed' })
+      .eq('job_token', token)
+    setJob(prev => ({ ...prev, status: 'confirmed' }))
     setSubmitting(false)
   }
 
@@ -659,7 +681,47 @@ export default function JobPage() {
             )}
           </div>
 
-
+          {!showCompleteForm ? (
+            <button
+              onClick={() => setShowCompleteForm(true)}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                marginBottom: '1rem',
+                background: '#2563eb',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '1rem',
+                fontWeight: '600',
+              }}
+            >
+              ✅ Mark Job Complete
+            </button>
+          ) : (
+            <div style={{ marginBottom: '1rem', padding: '1rem', background: '#f8f9fa', borderRadius: '4px', border: '1px solid #dee2e6' }}>
+              <p style={{ margin: '0 0 0.75rem', fontWeight: '600' }}>Mark this job as complete?</p>
+              <p style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#666' }}>
+                Make sure you have submitted your supply report before marking complete.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={markComplete}
+                  disabled={submitting}
+                  style={{ flex: 1, padding: '0.6rem', background: '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '600' }}
+                >
+                  Yes, job is complete
+                </button>
+                <button
+                  onClick={() => setShowCompleteForm(false)}
+                  style={{ flex: 1, padding: '0.6rem', background: 'white', color: '#333', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Not yet
+                </button>
+              </div>
+            </div>
+          )}
           {supplies.length > 0 && (
             <div style={styles.card}>
               <h2 style={{ marginTop: 0 }}>🧴 Supply Check</h2>
@@ -916,6 +978,22 @@ export default function JobPage() {
       {job.status === 'complete' && (
         <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#cce5ff', borderRadius: '4px' }}>
           <p style={{ margin: 0, color: '#004085' }}>✅ This job is marked complete. Thank you for your work!</p>
+          <button
+            onClick={undoComplete}
+            disabled={submitting}
+            style={{
+              marginTop: '0.75rem',
+              background: 'none',
+              border: 'none',
+              color: '#888',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              padding: 0,
+              textDecoration: 'underline',
+            }}
+          >
+            Undo — job is not complete yet
+          </button>
         </div>
       )}
     </div>
