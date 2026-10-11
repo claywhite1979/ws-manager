@@ -215,8 +215,9 @@ Reply if you have any questions. Thanks!`
             </p>
           )}
           <button
+            className="btn btn-primary btn-sm"
             onClick={() => setOfferStay(stay)}
-            style={{ marginTop: '0.5rem', cursor: 'pointer' }}
+            style={{ marginTop: 'var(--spacing-sm)' }}
           >
             + Create Offer
           </button>
@@ -241,13 +242,13 @@ Reply if you have any questions. Thanks!`
             Offered to: {job.cleaner?.name}
           </p>
           <button
+            className="btn btn-ghost btn-sm"
             onClick={() => {
               const window = calculateWindow(stay, stays)
               composeText(job, window)
             }}
-            style={{ marginTop: '0.25rem', cursor: 'pointer', fontSize: '0.85rem' }}
           >
-            📱 Resend Text
+            Resend Text
           </button>
           <button
             onClick={() => markJobComplete(job.id)}
@@ -289,13 +290,13 @@ Reply if you have any questions. Thanks!`
             </div>
           )}
           <button
+            className="btn btn-ghost btn-sm"
             onClick={() => {
               const window = calculateWindow(stay, stays)
               composeText(job, window)
             }}
-            style={{ marginTop: '0.25rem', cursor: 'pointer', fontSize: '0.85rem' }}
           >
-            📱 Resend Text
+            Resend Text
           </button>
         </div>
       )
@@ -358,16 +359,19 @@ Reply if you have any questions. Thanks!`
   if (loading) return <p>Loading stays...</p>
 
   return (
-    <section style={{ marginTop: '2rem' }}>
-      <h2>Stays {showArchived && <span style={{ fontSize: '0.8rem', fontWeight: 'normal', color: '#666', marginLeft: '0.5rem' }}>— viewing archived</span>}</h2>
-      <button onClick={() => setShowStayForm(true)}>+ Add Stay</button>
-      <button onClick={fetchAll} style={{ marginLeft: '1rem' }}>↻ Refresh</button>
-      <button
-        onClick={() => setShowArchived(prev => !prev)}
-        style={{ marginLeft: '1rem', cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: 'none', color: '#666', textDecoration: 'underline' }}
-      >
-        {showArchived ? 'Hide archived' : 'Show archived'}
-      </button>
+    <section className="section">
+      <div className="section-header">
+        <h2>
+          Stays {showArchived && <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'normal', color: 'var(--color-text-muted)', marginLeft: 'var(--spacing-xs)' }}>— viewing archived</span>}
+        </h2>
+        <div className="row">
+          <button className="btn btn-ghost btn-sm" onClick={fetchAll}>↻ Refresh</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowArchived(prev => !prev)}>
+            {showArchived ? 'Hide archived' : 'Show archived'}
+          </button>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowStayForm(true)}>+ Add Stay</button>
+        </div>
+      </div>
       {composedText && (
         <div style={{ marginTop: '1rem', padding: '1rem', background: '#f0f7ff', border: '1px solid #b3d4ff', borderRadius: '4px' }}>
           <h3 style={{ marginTop: 0 }}>📱 Ready to Send</h3>
@@ -387,61 +391,48 @@ Reply if you have any questions. Thanks!`
       {stays.length === 0
         ? <p>No stays yet.</p>
         : stays.map(s => (
-          <div key={s.id} style={{ border: '1px solid #ccc', padding: '1rem', marginTop: '0.5rem', borderRadius: '4px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div key={s.id} className="card" style={{ marginTop: 'var(--spacing-sm)' }}>
+            <div className="row-between">
               <div>
-                <strong>{s.guest_name || 'Guest'}</strong>
-                <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
+                <strong style={{ fontSize: 'var(--font-size-base)' }}>{s.guest_name || 'Guest'}</strong>
+                <p style={{ margin: 'var(--spacing-xs) 0', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
                   📅 {s.check_in} → {s.check_out}
                 </p>
-                <p style={{ margin: '0.25rem 0', fontSize: '0.85rem', color: '#666' }}>
-                  📌 {s.source}
+                <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
+                  {s.source}
                 </p>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-end' }}>
-                <button
-                  onClick={() => setEditingStay(s)}
-                  style={{ cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '0.2rem 0.5rem' }}
-                >
-                  ✏️ Edit
+              <div className="col" style={{ alignItems: 'flex-end' }}>
+                <button className="btn btn-secondary btn-sm" onClick={() => setEditingStay(s)}>
+                  Edit
                 </button>
                 {!showArchived && (
-                  <button
-                    onClick={() => archiveStay(s.id)}
-                    style={{ cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '0.2rem 0.5rem', color: '#666' }}
-                  >
-                    📦 Archive
+                  <button className="btn btn-ghost btn-sm" onClick={() => archiveStay(s.id)}>
+                    Archive
                   </button>
                 )}
                 {showArchived && (
-                  <button
-                    onClick={() => unarchiveStay(s.id)}
-                    style={{ cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: '1px solid #ccc', borderRadius: '4px', padding: '0.2rem 0.5rem', color: '#155724' }}
-                  >
-                    📬 Unarchive
+                  <button className="btn btn-ghost btn-sm" onClick={() => unarchiveStay(s.id)}>
+                    Unarchive
                   </button>
                 )}
                 <button
+                  className="btn btn-ghost btn-sm"
                   onClick={() => deleteStay(s.id)}
-                  style={{ color: 'red', cursor: 'pointer', fontSize: '0.85rem', background: 'none', border: '1px solid #ffcccc', borderRadius: '4px', padding: '0.2rem 0.5rem' }}
+                  style={{ color: 'var(--color-danger)' }}
                 >
                   Remove
                 </button>
               </div>
             </div>
-            {getStatusDisplay(s)}
+
             {s.notes && (
-              <p style={{
-                margin: '0.5rem 0',
-                fontSize: '0.85rem',
-                padding: '0.4rem 0.75rem',
-                background: '#f8f9fa',
-                borderRadius: '4px',
-                borderLeft: '3px solid #2563eb',
-              }}>
+              <div className="note-block" style={{ marginTop: 'var(--spacing-sm)' }}>
                 {s.notes}
-              </p>
+              </div>
             )}
+
+            {getStatusDisplay(s)}
           </div>
         ))
       }

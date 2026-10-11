@@ -50,9 +50,9 @@
 }
 
 /* ============================================
-   DARK MODE
+   DARK MODE (removed for debugging)
    ============================================ */
-@media (prefers-color-scheme: dark) {
+/*@media (prefers-color-scheme: dark) {
   :root {
     --color-text: #f9fafb;
     --color-text-muted: #9ca3af;
@@ -64,7 +64,7 @@
     --color-warning-light: #431407;
     --color-danger-light: #450a0a;
   }
-}
+} */
 
 /* ============================================
    RESET & BASE
@@ -388,25 +388,7 @@ a:hover {
   color: var(--color-text);
 }
 
-@media (prefers-color-scheme: dark) {
-  .card {
-    background: var(--color-surface);
-    border-color: var(--color-border);
-  }
 
-  .form-input {
-    background: var(--color-surface);
-    color: var(--color-text);
-    border-color: var(--color-border);
-    color-scheme: dark;
-  }
-
-  .btn-secondary {
-    background: var(--color-surface);
-    color: var(--color-text);
-    border-color: var(--color-border);
-  }
-}
 
 /* ============================================
    EMPTY STATE

@@ -14,7 +14,7 @@ import Payments from './Payments'
 
 function Dashboard() {
   const { user } = useUser()
-  const ALLOWED_EMAILS = ['claywhite1979@gmail.com', 'hpkcllc@gmail.com', 'imkkristenwhite@gmail.com', 'alba.villa@cox.net']
+  const ALLOWED_EMAILS = ['claywhite1979@gmail.com', 'hpkcllc@gmail.com', 'imkkristenwhite@gmail.com', 'alba.villa@cox.net', 'r_p_crawford@yahoo.com']
   const [stayRefresh, setStayRefresh] = useState(0)
   const [showCleanerForm, setShowCleanerForm] = useState(false)
 
