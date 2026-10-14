@@ -167,39 +167,35 @@ export default function ICalSync({ onSync }) {
     }
 
     return (
-        <section style={{ marginTop: '2rem' }}>
-            <h2>Calendar Sync</h2>
-            <p style={{ color: '#666', fontSize: '0.9rem' }}>
-                Imports bookings from Airbnb and VRBO. Real bookings are added automatically; ambiguous events are held for your review.
-            </p>
-            <button
-                onClick={syncAll}
-                disabled={syncing}
-                style={{ padding: '0.5rem 1rem', cursor: 'pointer' }}
-            >
-                {syncing ? '⏳ Syncing...' : '🔄 Sync Now'}
-            </button>
+  <section className="section">
+    <div className="section-header">
+      <h2>Calendar Sync</h2>
+      <button
+        className="btn btn-primary btn-sm"
+        onClick={syncAll}
+        disabled={syncing}
+      >
+        {syncing ? '⏳ Syncing...' : '🔄 Sync Now'}
+      </button>
+    </div>
+    <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-md)' }}>
+      Imports bookings from Airbnb and VRBO. Real bookings are added automatically; ambiguous events are held for your review.
+    </p>
 
-            {results && (
-                <div style={{ marginTop: '1rem' }}>
-                    {results.map((r, i) => (
-                        <div key={i} style={{
-                            padding: '0.75rem',
-                            marginTop: '0.5rem',
-                            borderRadius: '4px',
-                            background: r.error ? '#f8d7da' : '#d4edda',
-                            color: r.error ? '#721c24' : '#155724',
-                        }}>
-                            <strong>{r.source}</strong>
-                            {r.error && <span> — Error: {r.error}</span>}
-                            {r.reason && <span> — {r.reason}</span>}
-                            {!r.error && !r.reason && (
-                                <span> — {r.added} added, {r.pending} pending review, {r.skipped} already processed</span>
-                            )}
-                        </div>
-                    ))}
-                </div>
+    {results && (
+      <div style={{ marginTop: 'var(--spacing-md)' }}>
+        {results.map((r, i) => (
+          <div key={i} className={`alert ${r.error ? 'alert-danger' : 'alert-success'}`} style={{ marginTop: 'var(--spacing-xs)' }}>
+            <strong>{r.source}</strong>
+            {r.error && <span> — Error: {r.error}</span>}
+            {r.reason && <span> — {r.reason}</span>}
+            {!r.error && !r.reason && (
+              <span> — {r.added} added, {r.pending} pending review, {r.skipped} already processed</span>
             )}
-        </section>
-    )
+          </div>
+        ))}
+      </div>
+    )}
+  </section>
+)
 }

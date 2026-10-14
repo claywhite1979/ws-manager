@@ -373,18 +373,20 @@ Reply if you have any questions. Thanks!`
         </div>
       </div>
       {composedText && (
-        <div style={{ marginTop: '1rem', padding: '1rem', background: '#f0f7ff', border: '1px solid #b3d4ff', borderRadius: '4px' }}>
-          <h3 style={{ marginTop: 0 }}>📱 Ready to Send</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'sans-serif' }}>{composedText}</pre>
-          <button onClick={() => {
-            navigator.clipboard.writeText(composedText)
-            alert('Copied to clipboard!')
-          }}>
-            Copy to Clipboard
-          </button>
-          <button onClick={() => setComposedText(null)} style={{ marginLeft: '1rem' }}>
-            Dismiss
-          </button>
+        <div className="alert alert-info" style={{ marginTop: 'var(--spacing-md)' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 'var(--spacing-sm)' }}>Ready to Send</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--font-family)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-sm)' }}>{composedText}</pre>
+          <div className="row">
+            <button className="btn btn-primary btn-sm" onClick={() => {
+              navigator.clipboard.writeText(composedText)
+              alert('Copied to clipboard!')
+            }}>
+              Copy to Clipboard
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setComposedText(null)}>
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

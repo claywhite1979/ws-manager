@@ -56,78 +56,45 @@ export default function SyncReview({ onReviewed }) {
   if (pending.length === 0) return null
 
   return (
-    <section style={{ marginTop: '2rem' }}>
-      <h2>📋 Sync Review</h2>
-      <p style={{ color: '#666', fontSize: '0.9rem' }}>
+    <section className="section">
+      <div className="section-header">
+        <h2>Sync Review</h2>
+      </div>
+      <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-md)' }}>
         These events were imported but need your review before appearing on the dashboard.
       </p>
 
       {pending.map(event => (
-        <div key={event.id} style={{
-          border: '1px solid #ffc107',
-          background: '#fffdf0',
-          borderRadius: '4px',
-          padding: '1rem',
-          marginTop: '0.5rem',
-        }}>
-          <div style={{ marginBottom: '0.5rem' }}>
-            <strong>{event.title || 'No title'}</strong>
-            <span style={{
-              marginLeft: '0.5rem',
-              fontSize: '0.8rem',
-              color: '#666',
-              textTransform: 'uppercase',
-            }}>
-              {event.source}
-            </span>
+        <div key={event.id} className="card" style={{ marginTop: 'var(--spacing-sm)', borderLeft: '3px solid var(--color-warning)' }}>
+          <div className="row-between" style={{ marginBottom: 'var(--spacing-xs)' }}>
+            <div>
+              <strong>{event.title || 'No title'}</strong>
+              <span className="badge badge-neutral" style={{ marginLeft: 'var(--spacing-sm)' }}>
+                {event.source}
+              </span>
+            </div>
           </div>
-          <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>
-            📅 {event.check_in} → {event.check_out}
+          <p style={{ margin: 'var(--spacing-xs) 0', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+            {event.check_in} → {event.check_out}
           </p>
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+          <div className="row" style={{ marginTop: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
             <button
+              className="btn btn-success btn-sm"
               onClick={() => classify(event, 'guest')}
-              style={{
-                padding: '0.4rem 0.75rem',
-                background: '#d4edda',
-                color: '#155724',
-                border: '1px solid #28a745',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '0.85rem',
-              }}
             >
-              👤 Guest Stay
+              Guest Stay
             </button>
             <button
+              className="btn btn-primary btn-sm"
               onClick={() => classify(event, 'family')}
-              style={{
-                padding: '0.4rem 0.75rem',
-                background: '#cce5ff',
-                color: '#004085',
-                border: '1px solid #004085',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: '600',
-                fontSize: '0.85rem',
-              }}
             >
-              🏠 Family Block
+              Family Block
             </button>
             <button
+              className="btn btn-ghost btn-sm"
               onClick={() => classify(event, 'ignored')}
-              style={{
-                padding: '0.4rem 0.75rem',
-                background: '#f8f9fa',
-                color: '#666',
-                border: '1px solid #ccc',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-              }}
             >
-              🗑 Ignore
+              Ignore
             </button>
           </div>
         </div>

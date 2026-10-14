@@ -117,72 +117,76 @@ Reply if you have any questions. Thanks!`
   if (loading) return <p>Loading jobs...</p>
 
   return (
-    <section style={{ marginTop: '2rem' }}>
-      <h2>Stand-Alone Cleaning Jobs</h2>
-      <button onClick={fetchAll} style={{ marginLeft: '1rem' }}>↻ Refresh</button>
-      <button onClick={addJob}>+ Schedule Job</button>
+    <section className="section">
+      <div className="section-header">
+        <h2>Standalone Jobs</h2>
+        <div className="row">
+          <button className="btn btn-ghost btn-sm" onClick={fetchAll}>↻ Refresh</button>
+          <button className="btn btn-primary btn-sm" onClick={addJob}>+ Schedule Job</button>
+        </div>
+      </div>
 
       {composedText && (
-        <div style={{ marginTop: '1rem', padding: '1rem', background: '#f0f7ff', border: '1px solid #b3d4ff', borderRadius: '4px' }}>
-          <h3 style={{ marginTop: 0 }}>📱 Ready to Send</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'sans-serif' }}>{composedText}</pre>
-          <button onClick={() => {
-            navigator.clipboard.writeText(composedText)
-            alert('Copied to clipboard!')
-          }}>
-            Copy to Clipboard
-          </button>
-          <button onClick={() => setComposedText(null)} style={{ marginLeft: '1rem' }}>
-            Dismiss
-          </button>
+        <div className="alert alert-info" style={{ marginTop: 'var(--spacing-md)' }}>
+          <h3 style={{ marginTop: 0, marginBottom: 'var(--spacing-sm)' }}>📱 Ready to Send</h3>
+          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--font-family)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-sm)' }}>{composedText}</pre>
+          <div className="row">
+            <button className="btn btn-primary btn-sm" onClick={() => {
+              navigator.clipboard.writeText(composedText)
+              alert('Copied to clipboard!')
+            }}>
+              Copy to Clipboard
+            </button>
+            <button className="btn btn-ghost btn-sm" onClick={() => setComposedText(null)}>
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 
       {jobs.length === 0
-        ? <p>No jobs scheduled yet.</p>
+        ? <p className="empty-state">No standalone jobs scheduled yet.</p>
         : jobs.map(j => (
-          <div key={j.id} style={{ border: '1px solid #ccc', padding: '1rem', marginTop: '0.5rem', borderRadius: '4px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <strong>🧹 {j.cleaner?.name || 'Unassigned'}</strong>
-              <span style={{
-                padding: '0.25rem 0.75rem',
-                borderRadius: '999px',
-                fontSize: '0.8rem',
-                fontWeight: 'bold',
-                background:
-                  j.status === 'confirmed' ? '#d4edda' :
-                    j.status === 'declined' ? '#f8d7da' :
-                      j.status === 'complete' ? '#cce5ff' :
-                        j.status === 'in_progress' ? '#fff3cd' :
-                          '#e2e3e5',
-                color:
-                  j.status === 'confirmed' ? '#155724' :
-                    j.status === 'declined' ? '#721c24' :
-                      j.status === 'complete' ? '#004085' :
-                        j.status === 'in_progress' ? '#856404' :
-                          '#383d41'
-              }}>
-                {j.status}
-              </span>
+          <div key={j.id} className="card" style={{ marginTop: 'var(--spacing-sm)' }}>
+            <div className="row-between">
+              <div>
+                <strong>{j.cleaner?.name || 'Unassigned'}</strong>
+                <p style={{ margin: 'var(--spacing-xs) 0 0', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+                  📅 {j.scheduled_date}
+                </p>
+                <p style={{ margin: 'var(--spacing-xs) 0 0', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+                  🏠 Checkout: {j.stay?.check_out}
+                </p>
+                <p style={{ margin: 'var(--spacing-xs) 0 0', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+                  💵 ${j.agreed_rate} · {j.payment_status}
+                </p>
+              </div>
+              <div className="col" style={{ alignItems: 'flex-end' }}>
+                <span className={`badge ${j.status === 'confirmed' ? 'badge-success' :
+                    j.status === 'declined' ? 'badge-danger' :
+                      j.status === 'complete' ? 'badge-primary' :
+                        j.status === 'in_progress' ? 'badge-warning' :
+                          'badge-neutral'
+                  }`}>
+                  {j.status}
+                </span>
+                <button className="btn btn-ghost btn-sm" onClick={() => composeText(j)}>
+                  Resend Text
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => deleteJob(j.id)}
+                  style={{ color: 'var(--color-danger)' }}
+                >
+                  Remove
+                </button>
+              </div>
             </div>
-            <p>📅 Scheduled: {j.scheduled_date}</p>
-            <p>🏠 Stay checkout: {j.stay?.check_out}</p>
-            <p>💵 Rate: ${j.agreed_rate}</p>
-            <p>Payment: {j.payment_status}</p>
             {j.status === 'declined' && (
-              <p style={{ color: '#721c24', fontWeight: 'bold' }}>⚠️ Declined — needs reassignment</p>
+              <p style={{ marginTop: 'var(--spacing-sm)', fontSize: 'var(--font-size-sm)', color: 'var(--color-danger)', fontWeight: '500' }}>
+                ⚠️ Declined — needs reassignment
+              </p>
             )}
-            <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem' }}>
-              <button onClick={() => composeText(j)}>
-                📱 Compose Text
-              </button>
-              <button
-                onClick={() => deleteJob(j.id)}
-                style={{ color: 'red', cursor: 'pointer' }}
-              >
-                Remove
-              </button>
-            </div>
           </div>
         ))
       }

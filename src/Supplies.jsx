@@ -89,37 +89,41 @@ export default function Supplies() {
 
     return (
         <section style={{ marginTop: '2rem' }}>
-            <h2>Supplies</h2>
-            <button onClick={() => setShowSupplyForm(true)}>+ Add Supply Item</button>
-            <button onClick={fetchAll} style={{ marginLeft: '1rem' }}>↻ Refresh</button>
-
+            <div className="section-header">
+                <h2>Supplies</h2>
+                <div className="row">
+                    <button className="btn btn-ghost btn-sm" onClick={fetchAll}>↻ Refresh</button>
+                    <button className="btn btn-primary btn-sm" onClick={() => setShowSupplyForm(true)}>+ Add Supply Item</button>
+                </div>
+            </div>
             {flags.length > 0 && (
-                <div style={{ marginTop: '1rem', padding: '1rem', background: '#fff3cd', border: '1px solid #ffc107', borderRadius: '4px' }}>
-                    <h3 style={{ marginTop: 0 }}>⚠️ Supply Flags Needing Attention</h3>
+                <div className="alert alert-warning" style={{ marginTop: 'var(--spacing-md)' }}>
+                    <h3 style={{ marginTop: 0, marginBottom: 'var(--spacing-sm)' }}>Supply Flags Needing Attention</h3>
                     {flags.map(f => (
-                        <div key={f.id} style={{ marginBottom: '0.75rem', paddingBottom: '0.75rem', borderBottom: '1px solid #ffc107' }}>
-                            <strong>{f.supply_item?.name}</strong>
-                            <span style={{
-                                marginLeft: '0.5rem',
-                                padding: '0.1rem 0.5rem',
-                                borderRadius: '999px',
-                                fontSize: '0.75rem',
-                                background: f.status === 'out' ? '#f8d7da' : '#fff3cd',
-                                color: f.status === 'out' ? '#721c24' : '#856404',
-                            }}>
-                                {f.status}
-                            </span>
-                            {f.cleaner_note && <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>Note: {f.cleaner_note}</p>}
-                            <p style={{ margin: '0.25rem 0', fontSize: '0.8rem', color: '#666' }}>
+                        <div key={f.id} style={{ marginBottom: 'var(--spacing-md)', paddingBottom: 'var(--spacing-md)', borderBottom: `1px solid var(--color-border)` }}>
+                            <div className="row" style={{ marginBottom: 'var(--spacing-xs)' }}>
+                                <strong>{f.supply_item?.name}</strong>
+                                <span className={`badge ${f.status === 'out' ? 'badge-danger' : 'badge-warning'}`}>
+                                    {f.status}
+                                </span>
+                            </div>
+                            {f.cleaner_note && (
+                                <p style={{ margin: 'var(--spacing-xs) 0', fontSize: 'var(--font-size-sm)' }}>
+                                    {f.cleaner_note}
+                                </p>
+                            )}
+                            <p style={{ margin: 'var(--spacing-xs) 0', fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
                                 Flagged during job on {f.cleaning_job?.scheduled_date} by {f.cleaning_job?.cleaner?.name}
                             </p>
-                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            <div className="row" style={{ marginTop: 'var(--spacing-sm)' }}>
                                 {f.supply_item?.order_url && (
                                     <a href={f.supply_item.order_url} target="_blank" rel="noreferrer">
-                                        <button>🛒 Order Now</button>
+                                        <button className="btn btn-secondary btn-sm">Order Now</button>
                                     </a>
                                 )}
-                                <button onClick={() => resolveFlag(f.id, f.supply_item?.id)}>✅ Mark Resolved</button>
+                                <button className="btn btn-success btn-sm" onClick={() => resolveFlag(f.id, f.supply_item?.id)}>
+                                    Mark Resolved
+                                </button>
                             </div>
                         </div>
                     ))}
@@ -129,39 +133,45 @@ export default function Supplies() {
             {supplies.length === 0
                 ? <p>No supply items yet.</p>
                 : supplies.map(s => (
-                    <div key={s.id} style={{ border: '1px solid #ccc', padding: '1rem', marginTop: '0.5rem', borderRadius: '4px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <strong>{s.name}</strong>
-                            <span style={{
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '999px',
-                                fontSize: '0.8rem',
-                                fontWeight: 'bold',
-                                background: statusColor(s.current_status),
-                                color: statusTextColor(s.current_status),
-                            }}>
-                                {s.current_status}
-                            </span>
+                    <div key={s.id} className="card" style={{ marginTop: 'var(--spacing-sm)' }}>
+                        <div className="row-between">
+                            <div>
+                                <strong>{s.name}</strong>
+                                {s.category && (
+                                    <p style={{ margin: 'var(--spacing-xs) 0 0', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+                                        {s.category}
+                                    </p>
+                                )}
+                                {s.par_level_note && (
+                                    <p style={{ margin: 'var(--spacing-xs) 0 0', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-muted)' }}>
+                                        {s.par_level_note}
+                                    </p>
+                                )}
+                                {s.order_url && (
+                                    <a href={s.order_url} target="_blank" rel="noreferrer" style={{ fontSize: 'var(--font-size-sm)', display: 'block', marginTop: 'var(--spacing-xs)' }}>
+                                        Order link
+                                    </a>
+                                )}
+                            </div>
+                            <div className="col" style={{ alignItems: 'flex-end', gap: 'var(--spacing-xs)' }}>
+                                <span className={`badge ${s.current_status === 'ok' ? 'badge-success' :
+                                    s.current_status === 'low' ? 'badge-warning' :
+                                        'badge-danger'
+                                    }`}>
+                                    {s.current_status}
+                                </span>
+                                <button className="btn btn-secondary btn-sm" onClick={() => setEditingSupply(s)}>
+                                    Edit
+                                </button>
+                                <button
+                                    className="btn btn-ghost btn-sm"
+                                    onClick={() => deleteSupply(s.id)}
+                                    style={{ color: 'var(--color-danger)' }}
+                                >
+                                    Remove
+                                </button>
+                            </div>
                         </div>
-                        {s.category && <p style={{ margin: '0.25rem 0', color: '#666', fontSize: '0.9rem' }}>📦 {s.category}</p>}
-                        {s.par_level_note && <p style={{ margin: '0.25rem 0', fontSize: '0.9rem' }}>📋 {s.par_level_note}</p>}
-                        {s.order_url && (
-                            <a href={s.order_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.9rem' }}>
-                                🛒 Order link
-                            </a>
-                        )}
-                        <button
-                            onClick={() => setEditingSupply(s)}
-                            style={{ cursor: 'pointer', marginTop: '0.5rem', display: 'block' }}
-                        >
-                            ✏️ Edit
-                        </button>
-                        <button
-                            onClick={() => deleteSupply(s.id)}
-                            style={{ color: 'red', cursor: 'pointer', marginTop: '0.5rem', display: 'block' }}
-                        >
-                            Remove
-                        </button>
                     </div>
                 ))
             }
@@ -174,14 +184,14 @@ export default function Supplies() {
                 </Modal>
             )}
             {editingSupply && (
-  <Modal title="Edit Supply Item" onClose={() => setEditingSupply(null)}>
-    <SupplyEditForm
-      initial={editingSupply}
-      onSave={updateSupply}
-      onCancel={() => setEditingSupply(null)}
-    />
-  </Modal>
-)}
+                <Modal title="Edit Supply Item" onClose={() => setEditingSupply(null)}>
+                    <SupplyEditForm
+                        initial={editingSupply}
+                        onSave={updateSupply}
+                        onCancel={() => setEditingSupply(null)}
+                    />
+                </Modal>
+            )}
         </section>
     )
 }
