@@ -3,13 +3,13 @@ import { supabase } from './supabaseClient'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
-export default function SyncReview({ onReviewed }) {
+export default function SyncReview(props) {
   const [pending, setPending] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetchPending()
-  }, [])
+  }, [props.refreshTrigger])
 
   async function fetchPending() {
     setLoading(true)

@@ -17,6 +17,9 @@ function Dashboard() {
   const ALLOWED_EMAILS = ['claywhite1979@gmail.com', 'hpkcllc@gmail.com', 'imkkristenwhite@gmail.com', 'alba.villa@cox.net', 'r_p_crawford@yahoo.com']
   const [stayRefresh, setStayRefresh] = useState(0)
   const [showCleanerForm, setShowCleanerForm] = useState(false)
+  const [reviewRefresh, setReviewRefresh] = useState(0)
+
+
 
   function triggerStayRefresh() {
     setStayRefresh(prev => prev + 1)
@@ -164,8 +167,8 @@ function Dashboard() {
       <CleaningJobs />
       <Payments />
       <Supplies />
-      <SyncReview onReviewed={triggerStayRefresh} />
-      <ICalSync onSync={triggerStayRefresh} />
+      <SyncReview onReviewed={triggerStayRefresh} refreshTrigger={reviewRefresh} />
+      <ICalSync onSync={() => { triggerStayRefresh(); triggerReviewRefresh() }} />
       {showCleanerForm && (
         <Modal title="Add Cleaner" onClose={() => setShowCleanerForm(false)}>
           <CleanerForm
