@@ -42,6 +42,17 @@ export default function Stays(props) {
   }
 
   async function addStay(data) {
+    const conflicts = await checkStandaloneConflicts(data.check_in, data.check_out)
+
+    if (conflicts.length > 0) {
+      const names = conflicts.map(j => {
+        const worker = j.worker_name || j.cleaner?.name || 'Unknown'
+        return `${j.title} on ${j.scheduled_date} (${worker})`
+      }).join(', ')
+
+      if (!window.confirm(`⚠️ This stay overlaps with: ${names}. Add anyway?`)) return
+    }
+
     await supabase
       .from('stay')
       .insert([{ property_id: PROPERTY_ID, ...data }])
@@ -90,12 +101,36 @@ export default function Stays(props) {
   }
 
   async function updateStay(data) {
+    const conflicts = await checkStandaloneConflicts(data.check_in, data.check_out)
+
+    if (conflicts.length > 0) {
+      const names = conflicts.map(j => {
+        const worker = j.worker_name || j.cleaner?.name || 'Unknown'
+        return `${j.title} on ${j.scheduled_date} (${worker})`
+      }).join(', ')
+
+      if (!window.confirm(`⚠️ This stay overlaps with: ${names}. Update anyway?`)) return
+    }
+
     await supabase
       .from('stay')
       .update(data)
       .eq('id', editingStay.id)
     setEditingStay(null)
     fetchAll()
+  }
+
+  async function checkStandaloneConflicts(checkIn, checkOut) {
+    const { data: jobs } = await supabase
+      .from('cleaning_job')
+      .select('title, scheduled_date, cleaner(*), worker_name')
+      .eq('property_id', PROPERTY_ID)
+      .eq('standalone', true)
+      .neq('status', 'declined')
+      .gte('scheduled_date', checkIn)
+      .lte('scheduled_date', checkOut)
+
+    return jobs || []
   }
 
   function calculateWindow(stay, allStays) {
