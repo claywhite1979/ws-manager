@@ -19,10 +19,12 @@ function Dashboard() {
   const [showCleanerForm, setShowCleanerForm] = useState(false)
   const [reviewRefresh, setReviewRefresh] = useState(0)
 
-
-
   function triggerStayRefresh() {
     setStayRefresh(prev => prev + 1)
+  }
+
+  function triggerReviewRefresh() {
+    setReviewRefresh(prev => prev + 1)
   }
 
   const userEmail = user?.emailAddresses[0]?.emailAddress
