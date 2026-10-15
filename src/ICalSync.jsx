@@ -47,13 +47,17 @@ export default function ICalSync({ onSync }) {
 
                 const today = new Date()
                 const cutoff = new Date()
+                const horizon = new Date()
                 cutoff.setDate(today.getDate() - 30)
+                horizon.setDate(today.getDate() + 364)
 
                 for (const event of events) {
                     if (!event.start || !event.end || !event.uid) continue
 
                     const checkOut = new Date(event.end)
+                    const checkIn = new Date(event.start)
                     if (checkOut < cutoff) continue
+                    if (checkIn > horizon) continue
 
                     // Check if we've already processed this UID
                     const { data: existing } = await supabase
@@ -167,35 +171,35 @@ export default function ICalSync({ onSync }) {
     }
 
     return (
-  <section className="section">
-    <div className="section-header">
-      <h2>Calendar Sync</h2>
-      <button
-        className="btn btn-primary btn-sm"
-        onClick={syncAll}
-        disabled={syncing}
-      >
-        {syncing ? '⏳ Syncing...' : '🔄 Sync Now'}
-      </button>
-    </div>
-    <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-md)' }}>
-      Imports bookings from Airbnb and VRBO. Real bookings are added automatically; ambiguous events are held for your review.
-    </p>
+        <section className="section">
+            <div className="section-header">
+                <h2>Calendar Sync</h2>
+                <button
+                    className="btn btn-primary btn-sm"
+                    onClick={syncAll}
+                    disabled={syncing}
+                >
+                    {syncing ? '⏳ Syncing...' : '🔄 Sync Now'}
+                </button>
+            </div>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-md)' }}>
+                Imports bookings from Airbnb and VRBO. Real bookings are added automatically; ambiguous events are held for your review.
+            </p>
 
-    {results && (
-      <div style={{ marginTop: 'var(--spacing-md)' }}>
-        {results.map((r, i) => (
-          <div key={i} className={`alert ${r.error ? 'alert-danger' : 'alert-success'}`} style={{ marginTop: 'var(--spacing-xs)' }}>
-            <strong>{r.source}</strong>
-            {r.error && <span> — Error: {r.error}</span>}
-            {r.reason && <span> — {r.reason}</span>}
-            {!r.error && !r.reason && (
-              <span> — {r.added} added, {r.pending} pending review, {r.skipped} already processed</span>
+            {results && (
+                <div style={{ marginTop: 'var(--spacing-md)' }}>
+                    {results.map((r, i) => (
+                        <div key={i} className={`alert ${r.error ? 'alert-danger' : 'alert-success'}`} style={{ marginTop: 'var(--spacing-xs)' }}>
+                            <strong>{r.source}</strong>
+                            {r.error && <span> — Error: {r.error}</span>}
+                            {r.reason && <span> — {r.reason}</span>}
+                            {!r.error && !r.reason && (
+                                <span> — {r.added} added, {r.pending} pending review, {r.skipped} already processed</span>
+                            )}
+                        </div>
+                    ))}
+                </div>
             )}
-          </div>
-        ))}
-      </div>
-    )}
-  </section>
-)
+        </section>
+    )
 }
