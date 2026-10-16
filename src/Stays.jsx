@@ -16,6 +16,7 @@ export default function Stays(props) {
   const [offerStay, setOfferStay] = useState(null)
   const [editingStay, setEditingStay] = useState(null)
   const [showArchived, setShowArchived] = useState(false)
+  const [standaloneJobs, setStandaloneJobs] = useState([])
 
   useEffect(() => {
     fetchAll()
@@ -36,6 +37,14 @@ export default function Stays(props) {
       .select('*')
       .eq('active', true)
 
+    const { data: jobData } = await supabase
+      .from('cleaning_job')
+      .select('*, cleaner(*)')
+      .eq('property_id', PROPERTY_ID)
+      .eq('standalone', true)
+      .neq('status', 'declined')
+
+    setStandaloneJobs(jobData || [])
     setStays(stayData || [])
     setCleaners(cleanerData || [])
     setLoading(false)
@@ -131,6 +140,15 @@ export default function Stays(props) {
       .lte('scheduled_date', checkOut)
 
     return jobs || []
+  }
+
+  function getStandaloneConflicts(stay, jobs) {
+    if (!jobs || jobs.length === 0) return []
+    return jobs.filter(j =>
+      j.scheduled_date >= stay.check_in &&
+      j.scheduled_date <= stay.check_out &&
+      j.status !== 'declined'
+    )
   }
 
   function calculateWindow(stay, allStays) {
@@ -468,6 +486,13 @@ Reply if you have any questions. Thanks!`
                 {s.notes}
               </div>
             )}
+
+            {getStandaloneConflicts(s, standaloneJobs).map(j => (
+              <div key={j.id} className="alert alert-warning" style={{ marginTop: 'var(--spacing-sm)', fontSize: 'var(--font-size-xs)' }}>
+                ⚠️ {j.title || 'Standalone job'} scheduled on {j.scheduled_date}
+                {(j.cleaner?.name || j.worker_name) && ` (${j.cleaner?.name || j.worker_name})`}
+              </div>
+            ))}
 
             {getStatusDisplay(s)}
           </div>

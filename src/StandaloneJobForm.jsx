@@ -149,7 +149,7 @@ export default function StandaloneJobForm({ onSave, onCancel, cleaners }) {
             <div style={buttonRowStyle}>
                 <button style={secondaryButton} onClick={onCancel}>Cancel</button>
                 <button style={primaryButton} onClick={handleSubmit} disabled={saving}>
-                    {saving ? 'Saving...' : 'Send Offer'}
+                    {saving ? 'Saving...' : 'Save Job'}
                 </button>
             </div>
         </div>

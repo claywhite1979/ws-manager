@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 import Modal from './Modal'
 import StandaloneJobForm from './StandaloneJobForm'
+import StandaloneJobEditForm from './StandaloneJobEditForm'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
@@ -15,6 +16,7 @@ export default function CleaningJobs() {
   const [editingJob, setEditingJob] = useState(null)
   const [jobNotes, setJobNotes] = useState({})
   const [savingNotes, setSavingNotes] = useState(false)
+  const [editingStandaloneJob, setEditingStandaloneJob] = useState(null)
 
   useEffect(() => {
     fetchAll()
@@ -46,15 +48,9 @@ export default function CleaningJobs() {
   }
 
   async function addJob(data) {
-    const { data: newJob, error } = await supabase
+    await supabase
       .from('cleaning_job')
       .insert([data])
-      .select('*, stay(*), cleaner(*)')
-      .single()
-
-    if (!error && newJob) {
-      composeText(newJob)
-    }
 
     setShowJobForm(false)
     fetchAll()
@@ -105,6 +101,23 @@ Reply if you have any questions. Thanks!`
       .eq('id', id)
     setSavingNotes(false)
     fetchAll()
+  }
+
+  async function updateJob(data) {
+    await supabase
+      .from('cleaning_job')
+      .update(data)
+      .eq('id', editingStandaloneJob.id)
+    setEditingStandaloneJob(null)
+    fetchAll()
+  }
+
+  function getStayConflicts(job, stays) {
+    if (!stays || stays.length === 0) return []
+    return stays.filter(s =>
+      job.scheduled_date >= s.check_in &&
+      job.scheduled_date <= s.check_out
+    )
   }
 
   if (loading) return <p>Loading jobs...</p>
@@ -165,12 +178,18 @@ Reply if you have any questions. Thanks!`
               </div>
               <div className="col" style={{ alignItems: 'flex-end' }}>
                 <span className={`badge ${j.status === 'confirmed' ? 'badge-success' :
-                    j.status === 'complete' ? 'badge-primary' :
-                      j.status === 'declined' ? 'badge-danger' :
-                        'badge-neutral'
+                  j.status === 'complete' ? 'badge-primary' :
+                    j.status === 'declined' ? 'badge-danger' :
+                      'badge-neutral'
                   }`}>
                   {j.status}
                 </span>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => setEditingStandaloneJob(j)}
+                >
+                  Edit
+                </button>
                 {j.status === 'confirmed' && (
                   <button
                     className="btn btn-ghost btn-sm"
@@ -246,6 +265,11 @@ Reply if you have any questions. Thanks!`
                 </button>
               )}
             </div>
+            {getStayConflicts(j, stays).map((s, i) => (
+              <div key={i} className="alert alert-warning" style={{ marginTop: 'var(--spacing-sm)', fontSize: 'var(--font-size-xs)' }}>
+                ⚠️ Overlaps with stay: {s.guest_name || 'Guest'} ({s.check_in} → {s.check_out})
+              </div>
+            ))}
           </div>
         ))
       }
@@ -255,6 +279,16 @@ Reply if you have any questions. Thanks!`
             cleaners={cleaners}
             onSave={addJob}
             onCancel={() => setShowJobForm(false)}
+          />
+        </Modal>
+      )}
+      {editingStandaloneJob && (
+        <Modal title="Edit Job" onClose={() => setEditingStandaloneJob(null)}>
+          <StandaloneJobEditForm
+            job={editingStandaloneJob}
+            cleaners={cleaners}
+            onSave={updateJob}
+            onCancel={() => setEditingStandaloneJob(null)}
           />
         </Modal>
       )}
