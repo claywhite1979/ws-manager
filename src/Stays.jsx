@@ -4,6 +4,7 @@ import Modal from './Modal'
 import StayForm from './StayForm'
 import StayEditForm from './StayEditForm'
 import JobOfferForm from './JobOfferForm'
+import StayFlags from './StayFlags'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
@@ -486,6 +487,8 @@ Reply if you have any questions. Thanks!`
                 {s.notes}
               </div>
             )}
+
+            <StayFlags stay={s} onUpdate={fetchAll} />
 
             {getStandaloneConflicts(s, standaloneJobs).map(j => (
               <div key={j.id} className="alert alert-warning" style={{ marginTop: 'var(--spacing-sm)', fontSize: 'var(--font-size-xs)' }}>
