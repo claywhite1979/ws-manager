@@ -13,6 +13,7 @@ import SyncReview from './SyncReview'
 import Payments from './Payments'
 import SuppliesPage from './SuppliesPage'
 import Alerts from './Alerts'
+import CleanerEditForm from './CleanerEditForm'
 
 function Dashboard() {
   const { user } = useUser()
@@ -20,6 +21,7 @@ function Dashboard() {
   const [stayRefresh, setStayRefresh] = useState(0)
   const [showCleanerForm, setShowCleanerForm] = useState(false)
   const [reviewRefresh, setReviewRefresh] = useState(0)
+  const [editingCleaner, setEditingCleaner] = useState(null)
 
   function triggerStayRefresh() {
     setStayRefresh(prev => prev + 1)
@@ -85,6 +87,15 @@ function Dashboard() {
     fetchData()
   }
 
+  async function updateCleaner(data) {
+    await supabase
+      .from('cleaner')
+      .update(data)
+      .eq('id', editingCleaner.id)
+    setEditingCleaner(null)
+    fetchData()
+  }
+
   async function deleteCleaner(id) {
     if (!confirm('Are you sure you want to remove this cleaner?')) return
 
@@ -123,7 +134,7 @@ function Dashboard() {
       </div>
 
       <Alerts />
-      
+
       <section className="section">
         <div className="section-header">
           <h2>Properties</h2>
@@ -157,13 +168,18 @@ function Dashboard() {
                   <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--spacing-xs)' }}>📞 {c.phone}</p>
                   <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--font-size-sm)' }}>💵 Default rate: ${c.default_rate}</p>
                 </div>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => deleteCleaner(c.id)}
-                  style={{ color: 'var(--color-danger)' }}
-                >
-                  Remove
-                </button>
+                <div className="col" style={{ alignItems: 'flex-end', gap: 'var(--spacing-xs)' }}>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setEditingCleaner(c)}>
+                    Edit
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => deleteCleaner(c.id)}
+                    style={{ color: 'var(--color-danger)' }}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -180,6 +196,15 @@ function Dashboard() {
           <CleanerForm
             onSave={addCleaner}
             onCancel={() => setShowCleanerForm(false)}
+          />
+        </Modal>
+      )}
+      {editingCleaner && (
+        <Modal title="Edit Cleaner" onClose={() => setEditingCleaner(null)}>
+          <CleanerEditForm
+            initial={editingCleaner}
+            onSave={updateCleaner}
+            onCancel={() => setEditingCleaner(null)}
           />
         </Modal>
       )}
