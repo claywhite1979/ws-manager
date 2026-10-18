@@ -11,6 +11,7 @@ import Modal from './Modal'
 import CleanerForm from './CleanerForm'
 import SyncReview from './SyncReview'
 import Payments from './Payments'
+import SuppliesPage from './SuppliesPage'
 
 function Dashboard() {
   const { user } = useUser()
@@ -213,6 +214,7 @@ function App() {
           </SignedIn>
         </>
       } />
+      <Route path="/supplies" element={<SuppliesPage />} />
     </Routes>
   )
 }
