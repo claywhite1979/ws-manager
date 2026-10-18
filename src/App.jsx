@@ -12,6 +12,7 @@ import CleanerForm from './CleanerForm'
 import SyncReview from './SyncReview'
 import Payments from './Payments'
 import SuppliesPage from './SuppliesPage'
+import Alerts from './Alerts'
 
 function Dashboard() {
   const { user } = useUser()
@@ -121,6 +122,8 @@ function Dashboard() {
         </div>
       </div>
 
+      <Alerts />
+      
       <section className="section">
         <div className="section-header">
           <h2>Properties</h2>
