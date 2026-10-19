@@ -185,13 +185,25 @@ export default function Alerts() {
                                     {daysRemaining === 1 ? 'Last day' : `${daysRemaining} days left`}
                                 </span>
                             </div>
-                            <button
-                                className="btn btn-ghost btn-sm"
-                                onClick={() => markReviewed(stay.id)}
-                                style={{ marginTop: 'var(--spacing-sm)', color: 'var(--color-primary)' }}
-                            >
-                                ✓ Mark Reviewed
-                            </button>
+                            <div className="row" style={{ marginTop: 'var(--spacing-sm)', flexWrap: 'wrap' }}>
+                                {stay.source === 'airbnb' && (
+                                    <a href="https://www.airbnb.com/hosting" target="_blank" rel="noreferrer">
+                                        <button className="btn btn-secondary btn-sm">Review on Airbnb →</button>
+                                    </a>
+                                )}
+                                {stay.source === 'vrbo' && (
+                                    <a href="https://www.vrbo.com/supply/home?propertyId=36359715" target="_blank" rel="noreferrer">
+                                        <button className="btn btn-secondary btn-sm">Review on VRBO →</button>
+                                    </a>
+                                )}
+                                <button
+                                    className="btn btn-ghost btn-sm"
+                                    onClick={() => markReviewed(stay.id)}
+                                    style={{ color: 'var(--color-primary)' }}
+                                >
+                                    ✓ Mark Reviewed
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>
