@@ -447,7 +447,7 @@ Reply if you have any questions. Thanks!`
       {stays.length === 0
         ? <p>No stays yet.</p>
         : stays.map(s => (
-          <div key={s.id} className="card" style={{ marginTop: 'var(--spacing-sm)' }}>
+          <div key={s.id} id={s.id} className="card" style={{ marginTop: 'var(--spacing-sm)' }}>
             <div className="row-between">
               <div>
                 <strong style={{ fontSize: 'var(--font-size-base)' }}>{s.guest_name || 'Guest'}</strong>
