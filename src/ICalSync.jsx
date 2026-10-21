@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from './supabaseClient'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
@@ -17,9 +17,22 @@ function isRealBooking(title) {
     return REAL_BOOKING_PATTERNS.some(pattern => pattern.test(title.trim()))
 }
 
-export default function ICalSync({ onSync }) {
+export default function ICalSync({ onSync, autoSync = false }) {
     const [syncing, setSyncing] = useState(false)
     const [results, setResults] = useState(null)
+
+    useEffect(() => {
+        if (!autoSync) return
+        const lastSync = localStorage.getItem('lastSync')
+        if (!lastSync) {
+            syncAll()
+            return
+        }
+        const hoursSinceSync = (new Date() - new Date(lastSync)) / (1000 * 60 * 60)
+        if (hoursSinceSync >= 24) {
+            syncAll()
+        }
+    }, [])
 
     async function syncAll() {
         setSyncing(true)
@@ -126,6 +139,7 @@ export default function ICalSync({ onSync }) {
 
         setResults(summary)
         if (onSync) onSync()
+        localStorage.setItem('lastSync', new Date().toISOString())
         setSyncing(false)
     }
 

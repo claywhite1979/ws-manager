@@ -30,7 +30,7 @@ export default function StaysPage() {
         refreshTrigger={reviewRefresh}
       />
       <Stays refreshTrigger={reviewRefresh} />
-      <ICalSync onSync={() => setReviewRefresh(prev => prev + 1)} />
+      <ICalSync onSync={() => setReviewRefresh(prev => prev + 1)} autoSync={true} />
     </div>
   )
 }
