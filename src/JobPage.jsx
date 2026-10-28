@@ -200,6 +200,7 @@ export default function JobPage() {
       .eq('job_token', token)
     setJob(prev => ({ ...prev, status: 'complete' }))
     setShowCompleteForm(false)
+    setDateConfirmed(false)
     setSubmitting(false)
   }
 
@@ -627,10 +628,10 @@ export default function JobPage() {
                             key={status}
                             onClick={() => setFlag(s.id, status)}
                             className={`btn btn-sm ${flags[s.id] === status
-                                ? status === 'ok' ? 'btn-success'
-                                  : status === 'low' ? 'btn-warning'
-                                    : 'btn-danger'
-                                : 'btn-secondary'
+                              ? status === 'ok' ? 'btn-success'
+                                : status === 'low' ? 'btn-warning'
+                                  : 'btn-danger'
+                              : 'btn-secondary'
                               }`}
                           >
                             {status === 'ok' ? '✓ OK' : status === 'low' ? '⚠️ Low' : '❌ Out'}
@@ -710,10 +711,10 @@ export default function JobPage() {
                               key={status}
                               onClick={() => setNewSupply(prev => ({ ...prev, status }))}
                               className={`btn btn-sm ${newSupply.status === status
-                                  ? status === 'ok' ? 'btn-success'
-                                    : status === 'low' ? 'btn-warning'
-                                      : 'btn-danger'
-                                  : 'btn-secondary'
+                                ? status === 'ok' ? 'btn-success'
+                                  : status === 'low' ? 'btn-warning'
+                                    : 'btn-danger'
+                                : 'btn-secondary'
                                 }`}
                               style={{ flex: 1 }}
                             >

@@ -305,8 +305,13 @@ Reply if you have any questions. Thanks!`
             Resend Text
           </button>
           <button
-            onClick={() => markJobComplete(job.id)}
-            style={{ marginTop: '0.25rem', cursor: 'pointer', fontSize: '0.85rem', display: 'block', color: '#2563eb' }}
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              if (window.confirm('This job hasn\'t been accepted yet. Mark it complete anyway? Make sure the right cleaner is assigned before paying.')) {
+                markJobComplete(job.id)
+              }
+            }}
+            style={{ color: 'var(--color-success)', display: 'block', marginTop: 'var(--spacing-xs)' }}
           >
             ✅ Mark Complete
           </button>
@@ -351,6 +356,13 @@ Reply if you have any questions. Thanks!`
             }}
           >
             Resend Text
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => markJobComplete(job.id)}
+            style={{ color: 'var(--color-success)', display: 'block', marginTop: 'var(--spacing-xs)' }}
+          >
+            ✅ Mark Complete
           </button>
         </div>
       )

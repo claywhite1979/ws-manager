@@ -80,7 +80,7 @@ export default function Payments() {
 
     // Group jobs by cleaner
     const jobsByClean = jobs.reduce((acc, job) => {
-        const id = job.cleaner?.id || 'unknown'
+        const id = job.cleaner?.id || job.worker_name || 'unknown'
         if (!acc[id]) acc[id] = []
         acc[id].push(job)
         return acc
@@ -166,7 +166,7 @@ export default function Payments() {
                     <div key={cleanerId} className="card" style={{ marginTop: 'var(--spacing-md)' }}>
                         <div className="row-between" style={{ marginBottom: 'var(--spacing-md)' }}>
                             <div>
-                                <strong style={{ fontSize: 'var(--font-size-lg)' }}>{cleaner?.name || 'Unknown'}</strong>
+                                <strong style={{ fontSize: 'var(--font-size-lg)' }}>{cleaner?.name || cleanerJobs[0]?.worker_name || 'Unknown'}</strong>
                                 {!showPaid && owed > 0 && (
                                     <span style={{ marginLeft: 'var(--spacing-sm)', color: 'var(--color-warning)', fontWeight: '600', fontSize: 'var(--font-size-sm)' }}>
                                         ${owed.toFixed(2)} owed
