@@ -71,7 +71,12 @@ export default function Stays(props) {
   }
 
   async function deleteStay(id) {
-    if (!confirm('Remove this stay?')) return
+    const stay = stays.find(s => s.id === id)
+    const job = (stay?.cleaning_job || []).find(j => j.status === 'offered' || j.status === 'confirmed')
+    const msg = job
+      ? `Remove this stay? This also deletes the ${job.status} cleaning job for ${job.cleaner?.name || 'the cleaner'} (${job.scheduled_date}), and their job link will stop working. Remember to tell them.`
+      : 'Remove this stay?'
+    if (!confirm(msg)) return
     await supabase.from('stay').delete().eq('id', id)
     fetchAll()
   }
@@ -522,6 +527,14 @@ Reply if you have any questions. Thanks!`
                 <p style={{ margin: '0 0 var(--spacing-sm)', fontSize: 'var(--font-size-sm)' }}>
                   This booking may have been cancelled. Check the platform, then choose below.
                 </p>
+                {(() => {
+                  const job = (s.cleaning_job || []).find(j => j.status === 'offered' || j.status === 'confirmed')
+                  return job?.cleaner ? (
+                    <p style={{ margin: '0 0 var(--spacing-sm)', fontSize: 'var(--font-size-sm)', fontWeight: '600' }}>
+                      📞 If cancelled, let {job.cleaner.name} know{job.cleaner.phone ? ` (${job.cleaner.phone})` : ''}. There wasa {job.status} job on {job.scheduled_date}.
+                    </p>
+                  ) : null
+                })()}
                 <div className="row">
                   <button className="btn btn-secondary btn-sm" onClick={() => keepMissingStay(s.id)}>
                     Keep it (still valid)

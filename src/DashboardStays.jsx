@@ -23,7 +23,7 @@ export default function DashboardStays() {
 
         const { data } = await supabase
             .from('stay')
-            .select('*, cleaning_job(*)')
+            .select('*, cleaning_job(*, cleaner(*))')
             .eq('property_id', PROPERTY_ID)
             .eq('archived', false)
             .gte('check_out', today)
@@ -57,6 +57,12 @@ export default function DashboardStays() {
     function getActiveFlags(stay) {
         const flags = stay.flags || []
         return FLAG_DEFINITIONS.filter(f => flags.includes(f.key))
+    }
+
+    function getCleanerToNotify(stay) {
+        if (!stay.feed_missing_at) return null
+        const job = (stay.cleaning_job || []).find(j => j.status === 'offered' || j.status === 'confirmed')
+        return job?.cleaner?.name || null
     }
 
     if (loading) return null
@@ -99,8 +105,8 @@ export default function DashboardStays() {
                                     <strong>{stay.guest_name || 'Guest'}</strong>
                                     <span className="badge badge-neutral">{stay.source}</span>
                                     <span className={`badge ${daysUntil === 'Today' || daysUntil === 'Tomorrow' ? 'badge-danger' :
-                                            daysUntil === 'Checked in' ? 'badge-success' :
-                                                'badge-neutral'
+                                        daysUntil === 'Checked in' ? 'badge-success' :
+                                            'badge-neutral'
                                         }`}>
                                         {daysUntil}
                                     </span>
@@ -112,6 +118,12 @@ export default function DashboardStays() {
                                     <span className={`badge ${cleaning.color}`}>
                                         {cleaning.label}
                                     </span>
+                                    {stay.feed_missing_at && (
+                                        <span className="badge badge-danger">Missing from feed</span>
+                                    )}
+                                    {getCleanerToNotify(stay) && (
+                                        <span className="badge badge-warning">Tell {getCleanerToNotify(stay)}</span>
+                                    )}
                                     {activeFlags.map(flag => (
                                         <span key={flag.key} className={`badge ${flag.color}`}>
                                             {flag.label}
