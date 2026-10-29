@@ -36,6 +36,7 @@ export default function Alerts() {
             .gte('check_out', fourteenDaysAgoStr)
             .lte('check_out', todayStr)
             .is('reviewed_at', null)
+            .in('source', ['airbnb', 'vrbo'])
             .order('check_out', { ascending: false })
 
         // Fetch upcoming stays with their cleaning jobs
@@ -201,7 +202,7 @@ export default function Alerts() {
                                     onClick={() => markReviewed(stay.id)}
                                     style={{ color: 'var(--color-primary)' }}
                                 >
-                                    ✓ Mark Reviewed
+                                    ✓ I've Reviewed This Guest
                                 </button>
                             </div>
                         </div>

@@ -110,6 +110,20 @@ export default function Stays(props) {
     fetchAll()
   }
 
+  async function keepMissingStay(stayId) {
+    // Clear the flag and stop tracking this stay against the feed,
+    // so the next sync doesn't flag it again
+    await supabase
+      .from('stay')
+      .update({ feed_missing_at: null })
+      .eq('id', stayId)
+    await supabase
+      .from('ical_event')
+      .update({ stay_id: null })
+      .eq('stay_id', stayId)
+    fetchAll()
+  }
+
   async function updateStay(data) {
     const conflicts = await checkStandaloneConflicts(data.check_in, data.check_out)
 
@@ -497,6 +511,22 @@ Reply if you have any questions. Thanks!`
             {s.notes && (
               <div className="note-block" style={{ marginTop: 'var(--spacing-sm)' }}>
                 {s.notes}
+              </div>
+            )}
+
+            {s.feed_missing_at && (
+              <div className="alert alert-warning" style={{ marginTop: 'var(--spacing-sm)' }}>
+                <p style={{ margin: '0 0 var(--spacing-sm)', fontWeight: '600' }}>
+                  ⚠️ No longer in the {s.source} calendar feed
+                </p>
+                <p style={{ margin: '0 0 var(--spacing-sm)', fontSize: 'var(--font-size-sm)' }}>
+                  This booking may have been cancelled. Check the platform, then choose below.
+                </p>
+                <div className="row">
+                  <button className="btn btn-secondary btn-sm" onClick={() => keepMissingStay(s.id)}>
+                    Keep it (still valid)
+                  </button>
+                </div>
               </div>
             )}
 

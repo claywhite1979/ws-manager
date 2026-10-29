@@ -54,6 +54,7 @@ export default function ICalSync({ onSync, autoSync = false }) {
 
                 const text = await response.text()
                 const events = parseICal(text)
+                const seenUids = new Set(events.map(e => e.uid).filter(Boolean))
                 let added = 0
                 let pending = 0
                 let skipped = 0
@@ -66,6 +67,7 @@ export default function ICalSync({ onSync, autoSync = false }) {
 
                 for (const event of events) {
                     if (!event.start || !event.end || !event.uid) continue
+                    if (event.summary?.toLowerCase().includes('not available')) continue
 
                     const checkOut = new Date(event.end)
                     const checkIn = new Date(event.start)
@@ -131,7 +133,43 @@ export default function ICalSync({ onSync, autoSync = false }) {
                     }
                 }
 
-                summary.push({ source: source.label, added, pending, skipped })
+                let missing = 0
+                const todayStr = new Date().toLocaleDateString('en-CA')
+                const horizonStr = horizon.toLocaleDateString('en-CA')
+
+                // Only compare against the feed if it actually returned events
+                if (events.length > 0) {
+                    const { data: tracked } = await supabase
+                        .from('ical_event')
+                        .select('uid, stay_id')
+                        .eq('property_id', PROPERTY_ID)
+                        .eq('source', source.key)
+                        .in('status', ['guest', 'family'])
+                        .not('stay_id', 'is', null)
+                        .gte('check_out', todayStr)
+                        .lte('check_in', horizonStr)
+
+                    for (const t of tracked || []) {
+                        if (seenUids.has(t.uid)) {
+                            // Back in the feed, so clear any earlier flag
+                            await supabase
+                                .from('stay')
+                                .update({ feed_missing_at: null })
+                                .eq('id', t.stay_id)
+                                .not('feed_missing_at', 'is', null)
+                        } else {
+                            // Not in the feed, so flag it (only stamps if not already flagged)
+                            await supabase
+                                .from('stay')
+                                .update({ feed_missing_at: new Date().toISOString() })
+                                .eq('id', t.stay_id)
+                                .is('feed_missing_at', null)
+                            missing++
+                        }
+                    }
+                }
+
+                summary.push({ source: source.label, added, pending, skipped, missing })
             } catch (err) {
                 summary.push({ source: source.label, error: err.message })
             }
@@ -208,7 +246,7 @@ export default function ICalSync({ onSync, autoSync = false }) {
                             {r.error && <span> — Error: {r.error}</span>}
                             {r.reason && <span> — {r.reason}</span>}
                             {!r.error && !r.reason && (
-                                <span> — {r.added} added, {r.pending} pending review, {r.skipped} already processed</span>
+                                <span> — {r.added} added, {r.pending} pending review, {r.skipped} already processed{r.missing > 0 && `, ${r.missing} missing from feed`}</span>
                             )}
                         </div>
                     ))}
