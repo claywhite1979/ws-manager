@@ -110,8 +110,48 @@ export default function Stays(props) {
   async function unarchiveStay(id) {
     await supabase
       .from('stay')
-      .update({ archived: false })
+      .update({ archived: false, cancelled_at: null })
       .eq('id', id)
+    fetchAll()
+  }
+
+  async function cancelStay(id) {
+    const stay = stays.find(s => s.id === id)
+    const jobs = (stay?.cleaning_job || []).filter(j =>
+      ['offered', 'confirmed', 'in_progress'].includes(j.status)
+    )
+
+    const msg = jobs.length > 0
+      ? `Cancel this stay? The ${jobs[0].status} cleaning job for ${jobs[0].cleaner?.name || 'the cleaner'} will be cancelled too, and the stay moves to your archived view.`
+      : 'Cancel this stay? It will move to your archived view.'
+    if (!confirm(msg)) return
+
+    // Mark the stay cancelled and archive it, and clear any feed flag
+    await supabase
+      .from('stay')
+      .update({ archived: true, cancelled_at: new Date().toISOString(), feed_missing_at: null })
+      .eq('id', id)
+
+    // Stop tracking it against the feed so sync doesn't flag it again
+    await supabase
+      .from('ical_event')
+      .update({ stay_id: null })
+      .eq('stay_id', id)
+
+    // Cancel open cleaning jobs (completed jobs are left alone)
+    if (jobs.length > 0) {
+      await supabase
+        .from('cleaning_job')
+        .update({ status: 'cancelled' })
+        .in('id', jobs.map(j => j.id))
+
+      const job = jobs[0]
+      const name = job.cleaner?.name || 'there'
+      setComposedText(
+        `Hi ${name}, unfortunately the booking that ended ${stay.check_out} was cancelled, so we no longer need the cleaning on ${job.scheduled_date}. Sorry for the change! If you added it to your calendar, please remove it. Thank you!`
+      )
+    }
+
     fetchAll()
   }
 
@@ -204,7 +244,7 @@ export default function Stays(props) {
 
   function getActiveJob(stay) {
     if (!stay.cleaning_job || stay.cleaning_job.length === 0) return null
-    const active = stay.cleaning_job.filter(j => j.status !== 'declined')
+    const active = stay.cleaning_job.filter(j => j.status !== 'declined' && j.status !== 'cancelled')
     if (active.length === 0) return null
     return active.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
   }
@@ -488,6 +528,7 @@ Reply if you have any questions. Thanks!`
                 <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--color-text-muted)' }}>
                   {s.source}
                 </p>
+                {s.cancelled_at && <span className="badge badge-danger">Cancelled</span>}
               </div>
               <div className="col" style={{ alignItems: 'flex-end' }}>
                 <button className="btn btn-secondary btn-sm" onClick={() => setEditingStay(s)}>
@@ -501,6 +542,15 @@ Reply if you have any questions. Thanks!`
                 {showArchived && (
                   <button className="btn btn-ghost btn-sm" onClick={() => unarchiveStay(s.id)}>
                     Unarchive
+                  </button>
+                )}
+                {!showArchived && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => cancelStay(s.id)}
+                    style={{ color: 'var(--color-warning)' }}
+                  >
+                    Cancel stay
                   </button>
                 )}
                 <button
@@ -538,6 +588,9 @@ Reply if you have any questions. Thanks!`
                 <div className="row">
                   <button className="btn btn-secondary btn-sm" onClick={() => keepMissingStay(s.id)}>
                     Keep it (still valid)
+                  </button>
+                  <button className="btn btn-danger btn-sm" onClick={() => cancelStay(s.id)}>
+                    Cancel stay
                   </button>
                 </div>
               </div>

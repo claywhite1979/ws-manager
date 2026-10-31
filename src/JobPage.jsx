@@ -295,6 +295,15 @@ export default function JobPage() {
     </div>
   )
 
+  if (job.status === 'cancelled') return (
+    <div style={styles.centered}>
+      <h2>Job Cancelled</h2>
+      <p style={{ color: 'var(--color-text-muted)' }}>
+        This booking was cancelled, so this cleaning job is no longer needed. Please remove it from your calendar. Thank you!
+      </p>
+    </div>
+  )
+
   const availableDates = getAvailableDates(job)
 
   function downloadCalendarEvent() {
