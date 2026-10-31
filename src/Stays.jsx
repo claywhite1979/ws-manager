@@ -6,6 +6,22 @@ import StayEditForm from './StayEditForm'
 import JobOfferForm from './JobOfferForm'
 import StayFlags from './StayFlags'
 import { PUBLIC_URL } from './config'
+import ListToolbar from './ListToolbar'
+import { sortList, matchesSearch, nightsBetween } from './listUtils'
+
+const STAY_SORT_OPTIONS = [
+  { key: 'check_in', label: 'Check-in date' },
+  { key: 'check_out', label: 'Check-out date' },
+  { key: 'length', label: 'Length of stay' },
+  { key: 'source', label: 'Source' },
+  { key: 'name', label: 'Guest name' },
+]
+
+function getStaySortValue(s, key) {
+  if (key === 'length') return nightsBetween(s.check_in, s.check_out)
+  if (key === 'name') return s.guest_name ? s.guest_name.toLowerCase() : null
+  return s[key]
+}
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
@@ -20,10 +36,25 @@ export default function Stays(props) {
   const [showArchived, setShowArchived] = useState(false)
   const [standaloneJobs, setStandaloneJobs] = useState([])
   const [copiedJobId, setCopiedJobId] = useState(null)
+  const [composedStayId, setComposedStayId] = useState(null)
+  const [textCopied, setTextCopied] = useState(false)
+  const [search, setSearch] = useState('')
+  const [sortKey, setSortKey] = useState('check_in')
+  const [sortDir, setSortDir] = useState('asc')
+  const [sourceFilter, setSourceFilter] = useState('all')
+  const [cleaningFilter, setCleaningFilter] = useState('all')
+  const [flagFilter, setFlagFilter] = useState('all')
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState([])
 
   useEffect(() => {
     fetchAll()
   }, [props.refreshTrigger, showArchived])
+
+  useEffect(() => {
+    setSelectedIds([])
+    setSelectMode(false)
+  }, [showArchived])
 
   async function fetchAll() {
     setLoading(true)
@@ -153,6 +184,7 @@ export default function Stays(props) {
       setComposedText(
         `Hi ${name}, unfortunately the booking that ended ${stay.check_out} was cancelled, so we no longer need the cleaning on ${job.scheduled_date}. Sorry for the change! If you added it to your calendar, please remove it. Thank you!`
       )
+      setComposedStayId(id)
     }
 
     fetchAll()
@@ -177,6 +209,42 @@ export default function Stays(props) {
     setCopiedJobId(job.id)
     setTimeout(() => setCopiedJobId(null), 2000)
   }
+
+  function renderComposedCard() {
+    return (
+      <div id="composed-card" className="alert alert-info" style={{ marginTop: 'var(--spacing-md)' }}>
+        <h3 style={{ marginTop: 0, marginBottom: 'var(--spacing-sm)' }}>Ready to Send</h3>
+        <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--font-family)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-sm)' }}>
+          {composedText}
+        </pre>
+        <div className="row">
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={async () => {
+              await navigator.clipboard.writeText(composedText)
+              setTextCopied(true)
+              setTimeout(() => setTextCopied(false), 2000)
+            }}
+          >
+            {textCopied ? 'Copied!' : 'Copy to Clipboard'}
+          </button>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => { setComposedText(null); setComposedStayId(null) }}
+          >
+            Dismiss
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  useEffect(() => {
+    if (!composedText || loading) return
+    setTimeout(() => {
+      document.getElementById('composed-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 100)
+  }, [composedText, loading])
 
   async function updateStay(data) {
     const conflicts = await checkStandaloneConflicts(data.check_in, data.check_out)
@@ -313,6 +381,7 @@ ${appUrl}
 Reply if you have any questions. Thanks!`
 
     setComposedText(message)
+    setComposedStayId(job.stay_id || job.stay?.id || null)
   }
 
   function getStatusDisplay(stay) {
@@ -503,7 +572,86 @@ Reply if you have any questions. Thanks!`
     return null
   }
 
-  if (loading) return <p>Loading stays...</p>
+  const visibleStays = sortList(
+    stays.filter(s => {
+      if (!matchesSearch(`${s.guest_name || ''} ${s.notes || ''}`, search)) return false
+      if (sourceFilter !== 'all' && s.source !== sourceFilter) return false
+      if (cleaningFilter !== 'all') {
+        const job = getActiveJob(s)
+        const state = !job ? 'unassigned' : job.status === 'offered' ? 'pending' : 'covered'
+        if (state !== cleaningFilter) return false
+      }
+      if (flagFilter === 'flagged' && !((s.flags || []).length > 0 || s.feed_missing_at)) return false
+      return true
+    }),
+    s => getStaySortValue(s, sortKey),
+    sortDir
+  )
+
+  // Only stays currently shown can be acted on, so a filter can never
+  // leave a hidden selection that a bulk action would still affect.
+  const selectedStays = visibleStays.filter(s => selectedIds.includes(s.id))
+
+  const activeFilterCount =
+    (search.trim() ? 1 : 0) +
+    (sourceFilter !== 'all' ? 1 : 0) +
+    (cleaningFilter !== 'all' ? 1 : 0) +
+    (flagFilter !== 'all' ? 1 : 0)
+
+  function resetFilters() {
+    setSearch('')
+    setSourceFilter('all')
+    setCleaningFilter('all')
+    setFlagFilter('all')
+  }
+
+  function toggleSelected(id) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false)
+    setSelectedIds([])
+  }
+
+  async function bulkArchive(archive) {
+    if (selectedStays.length === 0) return
+    const n = selectedStays.length
+    const verb = archive ? 'Archive' : 'Unarchive'
+    if (!confirm(`${verb} ${n} stay${n === 1 ? '' : 's'}?`)) return
+    const changes = archive ? { archived: true } : { archived: false, cancelled_at: null }
+    await supabase.from('stay').update(changes).in('id', selectedStays.map(s => s.id))
+    exitSelectMode()
+    fetchAll()
+  }
+
+  async function bulkRemove() {
+    if (selectedStays.length === 0) return
+    const n = selectedStays.length
+    const openJobs = selectedStays.flatMap(s =>
+      (s.cleaning_job || [])
+        .filter(j => ['offered', 'confirmed'].includes(j.status))
+        .map(j => `${j.cleaner?.name || 'a cleaner'} (${j.scheduled_date})`)
+    )
+    const completedJobs = selectedStays.flatMap(s =>
+      (s.cleaning_job || []).filter(j => j.status === 'complete')
+    ).length
+
+    let msg = `Permanently remove ${n} stay${n === 1 ? '' : 's'}? This also deletes their cleaning jobs and supply reports, and cannot be undone. Archive is safer if you only want them out of the way.`
+    if (openJobs.length > 0) {
+      msg += `\n\nOpen jobs that will be deleted: ${openJobs.join(', ')}. Remember to tell those cleaners.`
+    }
+    if (completedJobs > 0) {
+      msg += `\n\n${completedJobs} completed job${completedJobs === 1 ? '' : 's'}, including payment records, will also be deleted.`
+    }
+    if (!confirm(msg)) return
+
+    await supabase.from('stay').delete().in('id', selectedStays.map(s => s.id))
+    exitSelectMode()
+    fetchAll()
+  }
+
+  if (loading && stays.length === 0) return <p>Loading stays...</p>
 
   return (
     <section className="section">
@@ -519,28 +667,94 @@ Reply if you have any questions. Thanks!`
           <button className="btn btn-primary btn-sm" onClick={() => setShowStayForm(true)}>+ Add Stay</button>
         </div>
       </div>
-      {composedText && (
-        <div className="alert alert-info" style={{ marginTop: 'var(--spacing-md)' }}>
-          <h3 style={{ marginTop: 0, marginBottom: 'var(--spacing-sm)' }}>Ready to Send</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--font-family)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--spacing-sm)' }}>{composedText}</pre>
-          <div className="row">
-            <button className="btn btn-primary btn-sm" onClick={() => {
-              navigator.clipboard.writeText(composedText)
-              alert('Copied to clipboard!')
-            }}>
-              Copy to Clipboard
-            </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setComposedText(null)}>
-              Dismiss
-            </button>
-          </div>
-        </div>
+      <ListToolbar
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search name or notes..."
+        sortOptions={STAY_SORT_OPTIONS}
+        sortKey={sortKey}
+        onSortKey={setSortKey}
+        sortDir={sortDir}
+        onSortDir={setSortDir}
+        filters={[
+          {
+            key: 'source', label: 'Source', value: sourceFilter, onChange: setSourceFilter,
+            options: [
+              { value: 'all', label: 'All sources' },
+              { value: 'airbnb', label: 'Airbnb' },
+              { value: 'vrbo', label: 'VRBO' },
+              { value: 'direct', label: 'Direct' },
+              { value: 'manual', label: 'Manual' },
+            ],
+          },
+          {
+            key: 'cleaning', label: 'Cleaning', value: cleaningFilter, onChange: setCleaningFilter,
+            options: [
+              { value: 'all', label: 'Any cleaning status' },
+              { value: 'unassigned', label: 'Unassigned' },
+              { value: 'pending', label: 'Offer pending' },
+              { value: 'covered', label: 'Confirmed/complete' },
+            ],
+          },
+          {
+            key: 'flags', label: 'Flags', value: flagFilter, onChange: setFlagFilter,
+            options: [
+              { value: 'all', label: 'All stays' },
+              { value: 'flagged', label: 'Has flags or warnings' },
+            ],
+          },
+        ]}
+        activeCount={activeFilterCount}
+        onReset={resetFilters}
+        selectMode={selectMode}
+        onToggleSelect={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
+        selectedCount={selectedStays.length}
+        shownCount={visibleStays.length}
+        onSelectAll={() => setSelectedIds(visibleStays.map(s => s.id))}
+        onClearSelection={() => setSelectedIds([])}
+        bulkActions={[
+          showArchived
+            ? { label: 'Unarchive', onClick: () => bulkArchive(false) }
+            : { label: 'Archive', onClick: () => bulkArchive(true) },
+          { label: 'Remove', danger: true, onClick: bulkRemove },
+        ]}
+      />
+
+      {stays.length > 0 && visibleStays.length === 0 && (
+        <p className="empty-state">No stays match your filters.</p>
       )}
+      {composedText && !stays.some(s => s.id === composedStayId) && renderComposedCard()}
 
       {stays.length === 0
         ? <p>No stays yet.</p>
-        : stays.map(s => (
-          <div key={s.id} id={s.id} className="card" style={{ marginTop: 'var(--spacing-sm)' }}>
+        : visibleStays.map(s => (
+          <div
+            key={s.id}
+            id={s.id}
+            className="card"
+            style={{
+              marginTop: 'var(--spacing-sm)',
+              borderColor: selectMode && selectedIds.includes(s.id) ? 'var(--color-primary)' : undefined,
+            }}
+          >
+            {selectMode && (
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'var(--spacing-sm)',
+                marginBottom: 'var(--spacing-sm)',
+                cursor: 'pointer',
+                fontSize: 'var(--font-size-sm)',
+                color: 'var(--color-text-muted)',
+              }}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(s.id)}
+                  onChange={() => toggleSelected(s.id)}
+                />
+                Select
+              </label>
+            )}
             <div className="row-between">
               <div>
                 <strong style={{ fontSize: 'var(--font-size-base)' }}>{s.guest_name || 'Guest'}</strong>
@@ -628,6 +842,7 @@ Reply if you have any questions. Thanks!`
             ))}
 
             {getStatusDisplay(s)}
+            {composedText && composedStayId === s.id && renderComposedCard()}
           </div>
         ))
       }
