@@ -5,6 +5,7 @@ import StayForm from './StayForm'
 import StayEditForm from './StayEditForm'
 import JobOfferForm from './JobOfferForm'
 import StayFlags from './StayFlags'
+import { PUBLIC_URL } from './config'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
@@ -18,6 +19,7 @@ export default function Stays(props) {
   const [editingStay, setEditingStay] = useState(null)
   const [showArchived, setShowArchived] = useState(false)
   const [standaloneJobs, setStandaloneJobs] = useState([])
+  const [copiedJobId, setCopiedJobId] = useState(null)
 
   useEffect(() => {
     fetchAll()
@@ -168,6 +170,12 @@ export default function Stays(props) {
       .update({ stay_id: null })
       .eq('stay_id', stayId)
     fetchAll()
+  }
+
+  async function copyJobLink(job) {
+    await navigator.clipboard.writeText(`${PUBLIC_URL}/job/${job.job_token}`)
+    setCopiedJobId(job.id)
+    setTimeout(() => setCopiedJobId(null), 2000)
   }
 
   async function updateStay(data) {
@@ -365,6 +373,12 @@ Reply if you have any questions. Thanks!`
           >
             Resend Text
           </button>
+          <a href={`/job/${job.job_token}`} target="_blank" rel="noreferrer">
+            <button className="btn btn-ghost btn-sm">Open job page</button>
+          </a>
+          <button className="btn btn-ghost btn-sm" onClick={() => copyJobLink(job)}>
+            {copiedJobId === job.id ? 'Copied!' : 'Copy link'}
+          </button>
           <button
             className="btn btn-ghost btn-sm"
             onClick={() => {
@@ -417,6 +431,12 @@ Reply if you have any questions. Thanks!`
             }}
           >
             Resend Text
+          </button>
+          <a href={`/job/${job.job_token}`} target="_blank" rel="noreferrer">
+            <button className="btn btn-ghost btn-sm">Open job page</button>
+          </a>
+          <button className="btn btn-ghost btn-sm" onClick={() => copyJobLink(job)}>
+            {copiedJobId === job.id ? 'Copied!' : 'Copy link'}
           </button>
           <button
             className="btn btn-ghost btn-sm"
