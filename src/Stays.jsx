@@ -43,6 +43,7 @@ export default function Stays(props) {
       .select('*, cleaner(*)')
       .eq('property_id', PROPERTY_ID)
       .eq('standalone', true)
+      .eq('archived', false)
       .neq('status', 'declined')
 
     setStandaloneJobs(jobData || [])
@@ -195,6 +196,7 @@ export default function Stays(props) {
       .select('title, scheduled_date, cleaner(*), worker_name')
       .eq('property_id', PROPERTY_ID)
       .eq('standalone', true)
+      .eq('archived', false)
       .neq('status', 'declined')
       .gte('scheduled_date', checkIn)
       .lte('scheduled_date', checkOut)

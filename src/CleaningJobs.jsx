@@ -17,10 +17,11 @@ export default function CleaningJobs() {
   const [jobNotes, setJobNotes] = useState({})
   const [savingNotes, setSavingNotes] = useState(false)
   const [editingStandaloneJob, setEditingStandaloneJob] = useState(null)
+  const [showArchived, setShowArchived] = useState(false)
 
   useEffect(() => {
     fetchAll()
-  }, [])
+  }, [showArchived])
 
   async function fetchAll() {
     setLoading(true)
@@ -29,6 +30,7 @@ export default function CleaningJobs() {
       .from('cleaning_job')
       .select('*, stay(*), cleaner(*)')
       .eq('standalone', true)
+      .eq('archived', showArchived)
       .order('scheduled_date', { ascending: false })
 
     const { data: stayData } = await supabase
@@ -93,6 +95,20 @@ Reply if you have any questions. Thanks!`
     fetchAll()
   }
 
+  async function archiveJob(job) {
+    const msg = job.payment_status === 'unpaid' && job.status === 'complete'
+      ? 'This job is complete but unpaid. It will still appear in Payments until it is paid. Archive it anyway?'
+      : 'Archive this job? You can restore it from the archived view.'
+    if (!confirm(msg)) return
+    await supabase.from('cleaning_job').update({ archived: true }).eq('id', job.id)
+    fetchAll()
+  }
+
+  async function unarchiveJob(job) {
+    await supabase.from('cleaning_job').update({ archived: false }).eq('id', job.id)
+    fetchAll()
+  }
+
   async function saveJobNote(id, note) {
     setSavingNotes(true)
     await supabase
@@ -128,6 +144,9 @@ Reply if you have any questions. Thanks!`
         <h2>Standalone Jobs</h2>
         <div className="row">
           <button className="btn btn-ghost btn-sm" onClick={fetchAll}>↻ Refresh</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowArchived(prev => !prev)}>
+            {showArchived ? 'Hide archived' : 'Show archived'}
+          </button>
           <button className="btn btn-primary btn-sm" onClick={() => setShowJobForm(true)}>+ Schedule Job</button>
         </div>
       </div>
@@ -205,6 +224,16 @@ Reply if you have any questions. Thanks!`
                     onClick={() => updateJobStatus(j.id, 'confirmed')}
                   >
                     Undo
+                  </button>
+                )}
+                {!showArchived && ['complete', 'declined', 'cancelled'].includes(j.status) && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => archiveJob(j)}>
+                    Archive
+                  </button>
+                )}
+                {showArchived && (
+                  <button className="btn btn-ghost btn-sm" onClick={() => unarchiveJob(j)}>
+                    Unarchive
                   </button>
                 )}
                 <button
