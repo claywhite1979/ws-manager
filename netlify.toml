@@ -8,7 +8,40 @@
   port = 8888
   targetPort = 5173
 
-  [[redirects]]
+  # Old and misplaced job links go to the team host
+[[redirects]]
+  from = "https://whitetailspur.com/job/*"
+  to = "https://team.whitetailspur.com/job/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.whitetailspur.com/job/*"
+  to = "https://team.whitetailspur.com/job/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://manage.whitetailspur.com/job/*"
+  to = "https://team.whitetailspur.com/job/:splat"
+  status = 301
+  force = true
+
+# Root and www go to the portal for now
+[[redirects]]
+  from = "https://whitetailspur.com/*"
+  to = "https://manage.whitetailspur.com/:splat"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://www.whitetailspur.com/*"
+  to = "https://manage.whitetailspur.com/:splat"
+  status = 301
+  force = true
+
+# Single-page app fallback (must stay last)
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

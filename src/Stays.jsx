@@ -366,7 +366,7 @@ export default function Stays(props) {
   function composeText(job, window) {
     const cleanerName = job.cleaner?.name || 'there'
     const jobToken = job.job_token
-    const appUrl = `https://whitetailspur.com/job/${jobToken}`
+    const appUrl = `${PUBLIC_URL}/job/${jobToken}`
 
     const message =
       `Hi ${cleanerName}! We'd like to offer you a cleaning job at the property.

@@ -312,7 +312,7 @@ export default function JobPage() {
     nextDay.setDate(nextDay.getDate() + 1)
     const nextDayStr = nextDay.toISOString().split('T')[0].replace(/-/g, '')
 
-    const jobUrl = `https://whitetailspur.com/job/${job.job_token}`
+    const jobUrl = `${TEAM_URL}/job/${job.job_token}`
 
     const description = [
       `Guest stay: ${job.stay?.check_in} to ${job.stay?.check_out}`,
