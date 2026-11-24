@@ -24,6 +24,3 @@ async function getClerkToken() {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   accessToken: getClerkToken,
 })
-
-// TEMPORARY - remove after testing
-if (window.location.hostname === TOKEN_HOST) window.__sb = supabase
