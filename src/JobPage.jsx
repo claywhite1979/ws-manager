@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
-import { supabase } from './supabaseClient'
+import { TEAM_URL } from './config'
+
+const ACTIVE = ['confirmed', 'in_progress']
 
 export default function JobPage() {
   const { token } = useParams()
   const [job, setJob] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [actionError, setActionError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [supplies, setSupplies] = useState([])
   const [flags, setFlags] = useState({})
@@ -27,59 +30,82 @@ export default function JobPage() {
     fetchJob()
   }, [token])
 
-  async function fetchJob() {
-    setLoading(true)
+  // Send one request to our server function. It throws an Error whose
+  // message is safe to show the cleaner.
+  async function callJob(action, details = {}) {
+    const res = await fetch('/.netlify/functions/job', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, action, ...details }),
+    })
+    let data = null
+    try {
+      data = await res.json()
+    } catch {
+      // not JSON; fall through to the generic message below
+    }
+    if (!res.ok || !data) {
+      throw new Error(data?.error || 'Something went wrong. Please try again.')
+    }
+    return data
+  }
 
-    const { data: jobData, error: jobError } = await supabase
-      .from('cleaning_job')
-      .select('*, stay(*), cleaner(*)')
-      .eq('job_token', token)
-      .single()
+  // Copy what the server told us into page state.
+  // mode 'initial': also restore notes and supply flags (first load)
+  // mode 'merge':   fill in server flags but keep anything the cleaner has picked locally
+  function applyPayload(data, mode) {
+    setJob(data.job)
+    setSupplies(data.supplies)
+    setDateConfirmed(ACTIVE.includes(data.job.status))
 
-    if (jobError || !jobData) {
-      setError('This link is invalid or has expired.')
-      setLoading(false)
-      return
+    if (mode === 'initial') {
+      if (data.job.cleaner_notes) {
+        setCleanerNotes(data.job.cleaner_notes)
+        setNotesSaved(true)
+      }
     }
 
-    setJob(jobData)
-
-    if (jobData.cleaner_notes) {
-      setCleanerNotes(jobData.cleaner_notes)
-      setNotesSaved(true)
-    }
-
-    if (jobData.status === 'confirmed' || jobData.status === 'in_progress') {
-      setDateConfirmed(true)
-    }
-
-    const { data: supplyData } = await supabase
-      .from('supply_item')
-      .select('*')
-      .eq('property_id', jobData.property_id)
-      .order('category', { ascending: true })
-
-    setSupplies(supplyData || [])
-
-    const { data: existingFlags } = await supabase
-      .from('supply_flag')
-      .select('*')
-      .eq('job_id', jobData.id)
-      .eq('resolved', false)
-
-    if (existingFlags && existingFlags.length > 0) {
-      setFlagsSubmitted(true)
+    if (mode === 'initial' || mode === 'merge') {
       const restoredFlags = {}
       const restoredNotes = {}
-      existingFlags.forEach(f => {
+      data.flags.forEach(f => {
         restoredFlags[f.supply_item_id] = f.status
         if (f.cleaner_note) restoredNotes[f.supply_item_id] = f.cleaner_note
       })
-      setFlags(restoredFlags)
-      setNotes(restoredNotes)
+      if (mode === 'initial') {
+        setFlagsSubmitted(data.flags.length > 0)
+        setFlags(restoredFlags)
+        setNotes(restoredNotes)
+      } else {
+        setFlags(prev => ({ ...restoredFlags, ...prev }))
+        setNotes(prev => ({ ...restoredNotes, ...prev }))
+      }
     }
+  }
 
+  async function fetchJob() {
+    setLoading(true)
+    try {
+      applyPayload(await callJob('get'), 'initial')
+    } catch (err) {
+      setError(err.message)
+    }
     setLoading(false)
+  }
+
+  // Run any action. Returns true if it worked.
+  async function run(action, details = {}, mode) {
+    setSubmitting(true)
+    setActionError(null)
+    try {
+      applyPayload(await callJob(action, details), mode)
+      return true
+    } catch (err) {
+      setActionError(err.message)
+      return false
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function getAvailableDates(job) {
@@ -96,175 +122,45 @@ export default function JobPage() {
 
   async function confirmDate() {
     if (!selectedDate) return
-    setSubmitting(true)
-
-    await supabase
-      .from('cleaning_job')
-      .update({ status: 'confirmed', scheduled_date: selectedDate })
-      .eq('job_token', token)
-
-    setJob(prev => ({ ...prev, status: 'confirmed', scheduled_date: selectedDate }))
-    setDateConfirmed(true)
-    setSubmitting(false)
+    await run('accept', { date: selectedDate })
   }
 
   async function changeDate() {
     if (!selectedDate) return
-    setSubmitting(true)
-
-    await supabase
-      .from('cleaning_job')
-      .update({ scheduled_date: selectedDate })
-      .eq('job_token', token)
-
-    setJob(prev => ({ ...prev, scheduled_date: selectedDate }))
-    setChangingDate(false)
-    setSubmitting(false)
+    if (await run('change_date', { date: selectedDate })) setChangingDate(false)
   }
 
   async function saveNotes() {
-    setSubmitting(true)
-
-    await supabase
-      .from('cleaning_job')
-      .update({ cleaner_notes: cleanerNotes })
-      .eq('job_token', token)
-
-    setNotesSaved(true)
-    setSubmitting(false)
+    if (await run('save_notes', { notes: cleanerNotes })) setNotesSaved(true)
   }
 
   async function addSupplyItem() {
     if (!newSupply.name.trim()) return
-    setSubmitting(true)
-
-    const { data: item } = await supabase
-      .from('supply_item')
-      .insert([{
-        property_id: job.property_id,
-        name: newSupply.name.trim(),
-        category: newSupply.category.trim() || null,
-        current_status: newSupply.status,
-      }])
-      .select()
-      .single()
-
-    if (item && newSupply.status !== 'ok') {
-      await supabase
-        .from('supply_flag')
-        .insert([{
-          job_id: job.id,
-          supply_item_id: item.id,
-          status: newSupply.status,
-        }])
+    const ok = await run('add_supply', newSupply, 'merge')
+    if (ok) {
+      setNewSupply({ name: '', category: '', status: 'low' })
+      setShowAddSupply(false)
     }
-
-    setNewSupply({ name: '', category: '', status: 'low' })
-    setShowAddSupply(false)
-    await fetchJob()
-    setSubmitting(false)
   }
 
   async function decline() {
-    setSubmitting(true)
-
-    await supabase
-      .from('cleaning_job')
-      .update({ status: 'declined' })
-      .eq('job_token', token)
-
-    setJob(prev => ({ ...prev, status: 'declined' }))
-    setSubmitting(false)
+    await run('decline')
   }
 
   async function resign() {
-    setSubmitting(true)
-
-    await supabase
-      .from('cleaning_job')
-      .update({
-        status: 'declined',
-        payment_note: resignNote ? `Resigned: ${resignNote}` : 'Resigned by cleaner'
-      })
-      .eq('job_token', token)
-
-    setJob(prev => ({ ...prev, status: 'declined' }))
-    setSubmitting(false)
+    await run('resign', { note: resignNote })
   }
 
   async function markComplete() {
-    setSubmitting(true)
-    await supabase
-      .from('cleaning_job')
-      .update({ status: 'complete' })
-      .eq('job_token', token)
-    setJob(prev => ({ ...prev, status: 'complete' }))
-    setShowCompleteForm(false)
-    setDateConfirmed(false)
-    setSubmitting(false)
+    if (await run('complete')) setShowCompleteForm(false)
   }
 
   async function undoComplete() {
-    setSubmitting(true)
-    await supabase
-      .from('cleaning_job')
-      .update({ status: 'confirmed' })
-      .eq('job_token', token)
-    setJob(prev => ({ ...prev, status: 'confirmed' }))
-    setSubmitting(false)
+    await run('undo_complete')
   }
 
   async function submitFlags() {
-    setSubmitting(true)
-
-    for (const [supplyId, status] of Object.entries(flags)) {
-      const { data: existing } = await supabase
-        .from('supply_flag')
-        .select('id')
-        .eq('job_id', job.id)
-        .eq('supply_item_id', supplyId)
-        .single()
-
-      if (status === 'ok') {
-        if (existing) {
-          await supabase
-            .from('supply_flag')
-            .update({ resolved: true, cleaner_note: null })
-            .eq('id', existing.id)
-        }
-        await supabase
-          .from('supply_item')
-          .update({ current_status: 'ok' })
-          .eq('id', supplyId)
-      } else {
-        if (existing) {
-          await supabase
-            .from('supply_flag')
-            .update({
-              status,
-              cleaner_note: notes[supplyId] || null,
-              resolved: false,
-            })
-            .eq('id', existing.id)
-        } else {
-          await supabase
-            .from('supply_flag')
-            .insert([{
-              job_id: job.id,
-              supply_item_id: supplyId,
-              status,
-              cleaner_note: notes[supplyId] || null,
-            }])
-        }
-        await supabase
-          .from('supply_item')
-          .update({ current_status: status })
-          .eq('id', supplyId)
-      }
-    }
-
-    setFlagsSubmitted(true)
-    setSubmitting(false)
+    if (await run('submit_flags', { flags, notes })) setFlagsSubmitted(true)
   }
 
   function setFlag(supplyId, status) {
@@ -347,6 +243,11 @@ export default function JobPage() {
 
   return (
     <div style={styles.page}>
+      {actionError && (
+        <div style={{ marginBottom: 'var(--spacing-md)', padding: 'var(--spacing-sm) var(--spacing-md)', border: '1px solid var(--color-danger)', borderRadius: '6px', color: 'var(--color-danger)', fontSize: 'var(--font-size-sm)' }}>
+          {actionError}
+        </div>
+      )}
       <h1 style={{ marginBottom: 'var(--spacing-xs)' }}>Cleaning Job</h1>
       <p style={{ color: 'var(--color-text-muted)', marginTop: 0, marginBottom: 'var(--spacing-lg)' }}>
         {job.cleaner?.name} · checkout {job.stay?.check_out}
@@ -761,13 +662,15 @@ export default function JobPage() {
       {job.status === 'complete' && (
         <div className="alert alert-info" style={{ marginTop: 'var(--spacing-lg)' }}>
           <p style={{ margin: '0 0 var(--spacing-sm)', fontWeight: '600' }}>✅ This job is marked complete. Thank you for your work!</p>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={undoComplete}
-            disabled={submitting}
-          >
-            Undo — job is not complete yet
-          </button>
+          {job.payment_status !== 'paid' && (
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={undoComplete}
+              disabled={submitting}
+            >
+              Undo — job is not complete yet
+            </button>
+          )}
         </div>
       )}
     </div>
