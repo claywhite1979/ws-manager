@@ -20,6 +20,7 @@ export default function Supplies() {
       .select('*')
       .eq('property_id', PROPERTY_ID)
       .in('current_status', ['low', 'out'])
+      .or('archived.is.null,archived.eq.false')
       .order('current_status', { ascending: true })
     setFlagged(data || [])
     setLoading(false)
