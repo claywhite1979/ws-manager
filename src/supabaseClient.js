@@ -7,10 +7,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 // - localhost uses the development Clerk instance, which Supabase does not trust,
 //   so sending its token would cause rejections.
 // - the team host never loads Clerk, so it stays anonymous.
-const TOKEN_HOST = 'manage.whitetailspur.com'
+const TOKEN_HOSTS = ['manage.whitetailspur.com', 'localhost']
 
 async function getClerkToken() {
-  if (window.location.hostname !== TOKEN_HOST) return null
+  if (!TOKEN_HOSTS.includes(window.location.hostname)) return null
 
   // Wait briefly for Clerk to finish loading, so early page queries carry the token
   for (let i = 0; i < 30; i++) {
