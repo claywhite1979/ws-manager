@@ -5,6 +5,7 @@ import Modal from './Modal'
 import CleanerForm from './CleanerForm'
 import CleanerEditForm from './CleanerEditForm'
 import { useRole } from './useRole'
+import UsersAdmin from './UsersAdmin'
 
 export default function SettingsPage() {
   const { user } = useUser()
@@ -125,6 +126,7 @@ export default function SettingsPage() {
         }
       </section>
 
+      {isAdmin && <UsersAdmin />}
       {/* Account */}
       <section className="section">
         <h2>Account</h2>
