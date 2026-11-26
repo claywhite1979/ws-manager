@@ -4,6 +4,7 @@ import { supabase } from './supabaseClient'
 import Modal from './Modal'
 import SupplyForm from './SupplyForm'
 import SupplyEditForm from './SupplyEditForm'
+import { useRole } from './useRole'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
@@ -14,18 +15,27 @@ export default function SuppliesPage() {
   const [showSupplyForm, setShowSupplyForm] = useState(false)
   const [editingSupply, setEditingSupply] = useState(null)
   const [activeRoom, setActiveRoom] = useState('All')
+  const [showArchived, setShowArchived] = useState(false)
+  const role = useRole()
+  const isAdmin = role === 'admin'
 
   useEffect(() => {
+    setActiveRoom('All')
     fetchSupplies()
-  }, [])
+  }, [showArchived])
 
   async function fetchSupplies() {
     setLoading(true)
-    const { data } = await supabase
+    let query = supabase
       .from('supply_item')
       .select('*')
       .eq('property_id', PROPERTY_ID)
-      .order('category', { ascending: true })
+    // Items created before archiving existed may have no value, so treat
+    // empty the same as "not archived".
+    query = showArchived
+      ? query.eq('archived', true)
+      : query.or('archived.is.null,archived.eq.false')
+    const { data } = await query.order('category', { ascending: true })
     setSupplies(data || [])
     setLoading(false)
   }
@@ -47,8 +57,14 @@ export default function SuppliesPage() {
     fetchSupplies()
   }
 
+  async function archiveSupply(item, archived) {
+    if (archived && !confirm(`Archive ${item.name}? It will be hidden from the list and from cleaners. You can restore it from the archived view.`)) return
+    await supabase.from('supply_item').update({ archived }).eq('id', item.id)
+    fetchSupplies()
+  }
+
   async function deleteSupply(id) {
-    if (!confirm('Remove this supply item?')) return
+    if (!confirm('Permanently delete this supply item? This cannot be undone. Archive is safer.')) return
     await supabase.from('supply_item').delete().eq('id', id)
     fetchSupplies()
   }
@@ -83,9 +99,14 @@ export default function SuppliesPage() {
           </button>
           <h1 style={{ margin: 0 }}>Supply Management</h1>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowSupplyForm(true)}>
-          + Add Supply Item
-        </button>
+        <div className="row">
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowArchived(prev => !prev)}>
+            {showArchived ? 'Hide archived' : 'Show archived'}
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowSupplyForm(true)}>
+            + Add Supply Item
+          </button>
+        </div>
       </div>
 
       {/* Room tabs */}
@@ -150,13 +171,18 @@ export default function SuppliesPage() {
                 <button className="btn btn-secondary btn-sm" onClick={() => setEditingSupply(s)}>
                   Edit
                 </button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => deleteSupply(s.id)}
-                  style={{ color: 'var(--color-danger)' }}
-                >
-                  Remove
+                <button className="btn btn-ghost btn-sm" onClick={() => archiveSupply(s, !showArchived)}>
+                  {showArchived ? 'Restore' : 'Archive'}
                 </button>
+                {isAdmin && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => deleteSupply(s.id)}
+                    style={{ color: 'var(--color-danger)' }}
+                  >
+                    Delete permanently
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -5,6 +5,7 @@ import StandaloneJobForm from './StandaloneJobForm'
 import StandaloneJobEditForm from './StandaloneJobEditForm'
 import ListToolbar from './ListToolbar'
 import { sortList, matchesSearch } from './listUtils'
+import { useRole } from './useRole'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 const ARCHIVABLE = ['complete', 'declined', 'cancelled']
@@ -40,6 +41,8 @@ export default function CleaningJobs() {
   const [editingStandaloneJob, setEditingStandaloneJob] = useState(null)
   const [notesJobId, setNotesJobId] = useState(null)
   const [noteDraft, setNoteDraft] = useState('')
+  const role = useRole()
+  const isAdmin = role === 'admin'
 
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState('date')
@@ -296,7 +299,7 @@ export default function CleaningJobs() {
           showArchived
             ? { label: 'Unarchive', onClick: () => bulkArchive(false) }
             : { label: 'Archive', onClick: () => bulkArchive(true) },
-          { label: 'Remove', danger: true, onClick: bulkRemove },
+          ...(isAdmin ? [{ label: 'Delete permanently', danger: true, onClick: bulkRemove }] : []),
         ]}
       />
 
@@ -381,13 +384,15 @@ export default function CleaningJobs() {
                     Unarchive
                   </button>
                 )}
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => deleteJob(j.id)}
-                  style={{ color: 'var(--color-danger)' }}
-                >
-                  Remove
-                </button>
+                {isAdmin && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => deleteJob(j.id)}
+                    style={{ color: 'var(--color-danger)' }}
+                  >
+                    Delete permanently
+                  </button>
+                )}
               </div>
             </div>
 

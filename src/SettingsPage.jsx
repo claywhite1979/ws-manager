@@ -4,6 +4,7 @@ import { useUser, SignOutButton } from '@clerk/clerk-react'
 import Modal from './Modal'
 import CleanerForm from './CleanerForm'
 import CleanerEditForm from './CleanerEditForm'
+import { useRole } from './useRole'
 
 export default function SettingsPage() {
   const { user } = useUser()
@@ -12,6 +13,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [showCleanerForm, setShowCleanerForm] = useState(false)
   const [editingCleaner, setEditingCleaner] = useState(null)
+  const role = useRole()
+  const isAdmin = role === 'admin'
 
   useEffect(() => {
     document.title = 'Settings — Whitetail Spur'
@@ -40,8 +43,17 @@ export default function SettingsPage() {
     fetchData()
   }
 
+  async function toggleCleanerActive(c) {
+    const msg = c.active
+      ? `Deactivate ${c.name}? They will no longer appear when you create offers, but their job history is kept. You can reactivate them any time.`
+      : `Reactivate ${c.name}?`
+    if (!confirm(msg)) return
+    await supabase.from('cleaner').update({ active: !c.active }).eq('id', c.id)
+    fetchData()
+  }
+
   async function deleteCleaner(id) {
-    if (!confirm('Remove this cleaner? This will also delete their job history.')) return
+    if (!confirm('Permanently delete this cleaner? This also deletes their job history and cannot be undone. Deactivate is safer.')) return
     await supabase.from('cleaner').delete().eq('id', id)
     fetchData()
   }
@@ -93,11 +105,19 @@ export default function SettingsPage() {
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
-                    onClick={() => deleteCleaner(c.id)}
-                    style={{ color: 'var(--color-danger)' }}
+                    onClick={() => toggleCleanerActive(c)}
                   >
-                    Remove
+                    {c.active ? 'Deactivate' : 'Reactivate'}
                   </button>
+                  {isAdmin && (
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => deleteCleaner(c.id)}
+                      style={{ color: 'var(--color-danger)' }}
+                    >
+                      Delete permanently
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

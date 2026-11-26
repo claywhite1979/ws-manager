@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient'
 import { PUBLIC_URL } from './config'
 import ListToolbar from './ListToolbar'
 import { sortList, matchesSearch } from './listUtils'
+import { useRole } from './useRole'
 
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 const INACTIVE = ['declined', 'cancelled']
@@ -34,6 +35,8 @@ export default function StayJobs({ refreshTrigger }) {
   const [loading, setLoading] = useState(true)
   const [showArchived, setShowArchived] = useState(false)
   const [copiedId, setCopiedId] = useState(null)
+  const role = useRole()
+  const isAdmin = role === 'admin'
 
   const [search, setSearch] = useState('')
   const [sortKey, setSortKey] = useState('date')
@@ -248,7 +251,7 @@ export default function StayJobs({ refreshTrigger }) {
           showArchived
             ? { label: 'Unarchive', onClick: () => bulkArchive(false) }
             : { label: 'Archive', onClick: () => bulkArchive(true) },
-          { label: 'Remove', danger: true, onClick: bulkRemove },
+          ...(isAdmin ? [{ label: 'Delete permanently', danger: true, onClick: bulkRemove }] : []),
         ]}
       />
 

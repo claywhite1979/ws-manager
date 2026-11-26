@@ -8,6 +8,7 @@ import StayFlags from './StayFlags'
 import { PUBLIC_URL } from './config'
 import ListToolbar from './ListToolbar'
 import { sortList, matchesSearch, nightsBetween } from './listUtils'
+import { useRole } from './useRole'
 
 const STAY_SORT_OPTIONS = [
   { key: 'check_in', label: 'Check-in date' },
@@ -46,6 +47,8 @@ export default function Stays(props) {
   const [flagFilter, setFlagFilter] = useState('all')
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState([])
+  const role = useRole()
+  const isAdmin = role === 'admin'
 
   useEffect(() => {
     fetchAll()
@@ -716,7 +719,7 @@ Reply if you have any questions. Thanks!`
           showArchived
             ? { label: 'Unarchive', onClick: () => bulkArchive(false) }
             : { label: 'Archive', onClick: () => bulkArchive(true) },
-          { label: 'Remove', danger: true, onClick: bulkRemove },
+          ...(isAdmin ? [{ label: 'Delete permanently', danger: true, onClick: bulkRemove }] : []),
         ]}
       />
 
@@ -789,13 +792,15 @@ Reply if you have any questions. Thanks!`
                     Cancel stay
                   </button>
                 )}
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => deleteStay(s.id)}
-                  style={{ color: 'var(--color-danger)' }}
-                >
-                  Remove
-                </button>
+                {isAdmin && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => deleteStay(s.id)}
+                    style={{ color: 'var(--color-danger)' }}
+                  >
+                    Delete permanently
+                  </button>
+                )}
               </div>
             </div>
 
