@@ -16,9 +16,10 @@ const ACTIVE = ['confirmed', 'in_progress']
 let _db
 function getDb() {
   if (!_db) {
-    const url = process.env.VITE_SUPABASE_URL
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
     const key = process.env.SUPABASE_SECRET_KEY
-    if (!url || !key) throw new Error('Missing Supabase environment variables')
+    if (!url) throw new Error('Missing SUPABASE_URL')
+    if (!key) throw new Error('Missing SUPABASE_SECRET_KEY')
     _db = createClient(url, key, { auth: { persistSession: false } })
   }
   return _db
@@ -126,7 +127,7 @@ async function updateJob(job, patch) {
 }
 
 const actions = {
-  async get() {},
+  async get() { },
 
   async accept(job, body) {
     need(job, ['offered'])
