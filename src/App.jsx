@@ -12,30 +12,40 @@ import SettingsPage from './SettingsPage'
 import DashboardStays from './DashboardStays'
 import DashboardPayments from './DashboardPayments'
 import Supplies from './Supplies'
+import { useRole } from './useRole'
 
-const ALLOWED_EMAILS = [
-  'claywhite1979@gmail.com',
-  'hpkcllc@gmail.com',
-  'imkkristenwhite@gmail.com',
-  'alba.villa@cox.net',
-  'r_p_crawford@yahoo.com'
-]
+// Access is decided by the database (the app_user table). This gate asks the
+// database who you are and shows a plain message if you have no access yet.
+function AccessGate({ children }) {
+  const role = useRole()
 
-function Dashboard() {
-  const { user } = useUser()
+  if (role === null) {
+    return (
+      <div className="page-container">
+        <p style={{ color: 'var(--color-text-muted)' }}>Loading...</p>
+      </div>
+    )
+  }
 
-  const userEmail = user?.emailAddresses[0]?.emailAddress
-  if (userEmail && !ALLOWED_EMAILS.includes(userEmail)) {
+  if (role === 'none') {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h2>Access Denied</h2>
-        <p>You don't have permission to access this app.</p>
+        <h2>Your account isn't set up yet</h2>
+        <p style={{ color: 'var(--color-text-muted)' }}>
+          You're signed in, but you don't have access to this app yet. Please ask the property owner to finish setting up your access.
+        </p>
         <SignOutButton>
           <button className="btn btn-secondary">Sign Out</button>
         </SignOutButton>
       </div>
     )
   }
+
+  return children
+}
+
+function Dashboard() {
+  const { user } = useUser()
 
   return (
     <div className="page-container">
@@ -96,15 +106,17 @@ function App() {
             </div>
           </SignedOut>
           <SignedIn>
-            <NavBar />
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/stays" element={<StaysPage />} />
-              <Route path="/jobs" element={<JobsPage />} />
-              <Route path="/supplies" element={<SuppliesPage />} />
-              <Route path="/payments" element={<PaymentsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-            </Routes>
+            <AccessGate>
+              <NavBar />
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/stays" element={<StaysPage />} />
+                <Route path="/jobs" element={<JobsPage />} />
+                <Route path="/supplies" element={<SuppliesPage />} />
+                <Route path="/payments" element={<PaymentsPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
+              </Routes>
+            </AccessGate>
           </SignedIn>
         </>
       } />
