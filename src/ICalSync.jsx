@@ -4,8 +4,8 @@ import { supabase } from './supabaseClient'
 const PROPERTY_ID = '5a23806a-a9d4-482b-b97f-f37453e2f196'
 
 const ICAL_SOURCES = [
-    { key: 'airbnb', label: 'Airbnb', url: import.meta.env.VITE_AIRBNB_ICAL_URL },
-    { key: 'vrbo', label: 'VRBO', url: import.meta.env.VITE_VRBO_ICAL_URL },
+    { key: 'airbnb', label: 'Airbnb' },
+    { key: 'vrbo', label: 'VRBO' },
 ]
 
 const REAL_BOOKING_PATTERNS = [
@@ -40,14 +40,14 @@ export default function ICalSync({ onSync, autoSync = false }) {
         const summary = []
 
         for (const source of ICAL_SOURCES) {
-            if (!source.url) {
+            if (!source.key) {
                 summary.push({ source: source.label, skipped: true, reason: 'No URL configured' })
                 continue
             }
 
             try {
                 const response = await fetch(
-                    `/.netlify/functions/fetch-ical?url=${encodeURIComponent(source.url)}`
+                    `/.netlify/functions/fetch-ical?feed=${source.key}`
                 )
 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`)
